@@ -7,7 +7,7 @@ function isAccessLockEnabled() {
 }
 
 function getAccessPassword() {
-  return String(import.meta.env.VITE_ACCESS_PASSWORD || 'ceo2026')
+  return String(import.meta.env.VITE_ACCESS_PASSWORD || 'EO2026')
 }
 
 export function AccessGate({ children }) {
