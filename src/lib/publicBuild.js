@@ -1,6 +1,7 @@
 export const IS_PUBLIC_EMPTY_BUILD = import.meta.env.VITE_PUBLIC_EMPTY_DATA === 'true'
+export const IS_PUBLIC_DEMO_BUILD = import.meta.env.VITE_PUBLIC_DEMO_DATA === 'true'
 
-const PUBLIC_EMPTY_MARKER_KEY = 'meeting-manager:public-empty-data-reset:v1'
+const PUBLIC_EMPTY_MARKER_KEY = 'meeting-manager:public-data-reset:v3.5-demo'
 
 const PUBLIC_DATA_KEYS = [
   'meeting-manager:optimized-demo:v1',
@@ -13,7 +14,7 @@ const PUBLIC_DATA_KEYS = [
 ]
 
 export function resetPublicBuildDataOnce() {
-  if (!IS_PUBLIC_EMPTY_BUILD || typeof window === 'undefined') return
+  if ((!IS_PUBLIC_EMPTY_BUILD && !IS_PUBLIC_DEMO_BUILD) || typeof window === 'undefined') return
 
   if (window.localStorage.getItem(PUBLIC_EMPTY_MARKER_KEY) === 'done') return
 
