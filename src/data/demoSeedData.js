@@ -1,4 +1,4 @@
-import demoLibrary from '../../test-data/meeting-library-56-plus.json'
+import demoLibrary from './demoDatabase.json'
 
 export const INITIAL_CONTACTS = Array.isArray(demoLibrary.contacts) ? demoLibrary.contacts : []
 export const INITIAL_MEETINGS = Array.isArray(demoLibrary.meetings) ? demoLibrary.meetings : []
