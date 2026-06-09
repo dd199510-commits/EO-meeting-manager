@@ -64,6 +64,8 @@ function HomeListItem({ label, value, tone = 'default', actionLabel, onClick }) 
   )
 }
 
+const homeLogoSrc = `${import.meta.env.BASE_URL}home-eo-logo-cutout.png`
+
 export function HomeView({
   meetings = [],
   contacts = [],
@@ -214,7 +216,7 @@ export function HomeView({
             </button>
           </div>
           <div className="home-office-logo" aria-label="总办 EO 标识">
-            <img src="/home-eo-logo-cutout.png" alt="" aria-hidden="true" />
+            <img src={homeLogoSrc} alt="" aria-hidden="true" />
           </div>
         </div>
 
