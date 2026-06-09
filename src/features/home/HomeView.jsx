@@ -12,6 +12,7 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react'
+import homeLogoSrc from '../../../public/home-eo-logo-cutout.png'
 
 function isMeetingIncomplete(meeting) {
   const hasAttendees = String(meeting.attendees || '').trim() || meeting.attendeeRefs?.length > 0
@@ -63,8 +64,6 @@ function HomeListItem({ label, value, tone = 'default', actionLabel, onClick }) 
     </div>
   )
 }
-
-const homeLogoSrc = `${import.meta.env.BASE_URL}home-eo-logo-cutout.png`
 
 export function HomeView({
   meetings = [],
