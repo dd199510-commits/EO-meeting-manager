@@ -1,6 +1,9 @@
 import { getMeetingFrequencyType } from '../../data/meetingData'
 import { generateOccurrencesInRange } from '../../lib/meetingFrequency'
 
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash'
+const LEGACY_GEMINI_DEFAULT_MODELS = new Set(['gemini-3.1-pro-preview', 'gemini-3-pro-preview'])
+
 const SIMPLIFIED_DEFAULT_RULES = [
   '周会优先安排在周一上午',
   '月会优先安排在每月第一周',
@@ -28,7 +31,7 @@ export const DEFAULT_AI_STATE = {
   exportBatch: null,
   settings: {
     provider: 'gemini',
-    model: 'gemini-3.1-pro-preview',
+    model: DEFAULT_GEMINI_MODEL,
     autoImportResult: true,
     autoImportToReview: false,
     lastImportedJobId: '',
@@ -237,14 +240,19 @@ export function normalizeAiState(input) {
   }
 
   const shouldRestoreLegacyDefaults = isSimplifiedDefaultPreferences(input.preferences)
+  const normalizedSettings = {
+    ...DEFAULT_AI_STATE.settings,
+    ...(input.settings ?? {}),
+  }
+
+  if (normalizedSettings.provider === 'gemini' && LEGACY_GEMINI_DEFAULT_MODELS.has(normalizedSettings.model)) {
+    normalizedSettings.model = DEFAULT_GEMINI_MODEL
+  }
 
   return {
     ...DEFAULT_AI_STATE,
     ...input,
-    settings: {
-      ...DEFAULT_AI_STATE.settings,
-      ...(input.settings ?? {}),
-    },
+    settings: normalizedSettings,
     exportBatch:
       input.exportBatch && typeof input.exportBatch === 'object'
         ? {

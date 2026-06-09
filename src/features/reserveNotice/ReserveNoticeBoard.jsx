@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Copy, FilePlus2, PencilLine, Search, Trash2, X } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
 import { splitAttendees } from '../../lib/contacts'
 import {
-  BUILT_IN_NOTICE_TEMPLATE_KEYS,
   BUILT_IN_NOTICE_TEMPLATES,
   getMergedNoticeTemplates,
   getNoticeTemplateOptions,
@@ -288,12 +287,6 @@ export function ReserveNoticeBoard({
   const sentCount = useMemo(() => rows.filter((row) => row.sent).length, [rows])
   const unsentCount = rows.length - sentCount
   const selectedOccurrenceRange = selectedRow ? buildOccurrenceRangeLabel(selectedRow.occurrences) : '暂无安排'
-  const selectedAttendees = selectedRow
-    ? summarizeText(selectedRow.meeting?.attendees || selectedRow.scheduledMeeting.attendees, '未填写参会人')
-    : '未填写参会人'
-  const selectedNotes = selectedRow
-    ? summarizeText(selectedRow.meeting?.notes || selectedRow.scheduledMeeting.notes, '无备注')
-    : '无备注'
 
   function handleTaskChange(taskId) {
     setSelectedId('')
@@ -475,7 +468,7 @@ export function ReserveNoticeBoard({
                     <CheckCircle2 size={16} />
                     {selectedRow.sent ? '取消已发送' : '标记已发送'}
                   </button>
-                  <button className="primary-button" onClick={() => copyText(selectedRow.text)}>
+                  <button className="primary-button" onClick={() => copyText(selectedPreviewText || selectedRow.text)}>
                     <Copy size={16} />
                     复制通知文案
                   </button>
@@ -489,53 +482,52 @@ export function ReserveNoticeBoard({
                 <span>{selectedRow.occurrences.length} 个安排时间</span>
               </div>
 
-              <div className="reserve-notice-preview-context-grid">
-                <div className="reserve-notice-context-card">
-                  <span className="final-check-item-label">参会人</span>
-                  <p>{selectedAttendees}</p>
-                </div>
-                <div className="reserve-notice-context-card">
-                  <span className="final-check-item-label">安排范围</span>
-                  <p>{selectedOccurrenceRange}</p>
-                </div>
-                <div className="reserve-notice-context-card reserve-notice-context-card-wide">
-                  <span className="final-check-item-label">备注重点</span>
-                  <p>{selectedNotes}</p>
-                </div>
-              </div>
+              <div className="reserve-notice-preview-main">
+                <div className="reserve-notice-preview-center">
+                  <div className="reserve-notice-preview-body">
+                    <pre>{selectedPreviewText || selectedRow.text}</pre>
+                  </div>
 
-              <div className="reserve-notice-arrangement-card">
-                <div className="reserve-notice-arrangement-head">
-                  <strong>本次通知覆盖的安排</strong>
-                  <span>{selectedRow.occurrences.length} 条</span>
-                </div>
-                <div className="reserve-notice-arrangement-list">
-                  {selectedRow.occurrences.map((item) => (
-                    <div key={item.id} className="reserve-notice-arrangement-item">
-                      <strong>{formatDisplayDate(item.date)}</strong>
-                      <span>{formatDisplayTime(item.startTime, item.endTime)}</span>
+                  <div className="reserve-notice-arrangement-card">
+                    <div className="reserve-notice-arrangement-head">
+                      <strong>本次通知覆盖的安排</strong>
+                      <span>{selectedRow.occurrences.length} 条</span>
                     </div>
-                  ))}
+                    <div className="reserve-notice-arrangement-list">
+                      {selectedRow.occurrences.map((item) => (
+                        <div key={item.id} className="reserve-notice-arrangement-item">
+                          <strong>{formatDisplayDate(item.date)}</strong>
+                          <span>{formatDisplayTime(item.startTime, item.endTime)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {selectedRow.meeting ? (
-                <ReserveNoticeSettings
-                  key={selectedRow.meeting.id}
-                  rowId={selectedRow.id}
-                  meeting={selectedPreviewMeeting}
-                  templateOptions={templateOptions}
-                  selectedTemplate={selectedPreviewTemplate}
-                  templateTokens={selectedPreviewTokens}
-                  templateContext={selectedPreviewContext}
-                  onUpdateMeeting={onUpdateMeeting}
-                  onOpenTemplateManager={() => setShowTemplateManager(true)}
-                  onDraftChange={setDraftNoticeSettings}
-                />
-              ) : null}
+                <div className="reserve-notice-preview-side">
+                  {selectedRow.meeting ? (
+                    <ReserveNoticeSettings
+                      key={selectedRow.meeting.id}
+                      rowId={selectedRow.id}
+                      meeting={selectedPreviewMeeting}
+                      templateOptions={templateOptions}
+                      onUpdateMeeting={onUpdateMeeting}
+                      onOpenTemplateManager={() => setShowTemplateManager(true)}
+                      onDraftChange={setDraftNoticeSettings}
+                    />
+                  ) : null}
 
-              <div className="reserve-notice-preview-body">
-                <pre>{selectedPreviewText || selectedRow.text}</pre>
+                  {selectedRow.meeting ? (
+                    <ReserveNoticeTemplateSource selectedTemplate={selectedPreviewTemplate} />
+                  ) : null}
+
+                  {selectedRow.meeting ? (
+                    <ReserveNoticeVariableMapping
+                      templateTokens={selectedPreviewTokens}
+                      templateContext={selectedPreviewContext}
+                    />
+                  ) : null}
+                </div>
               </div>
             </>
           ) : (
@@ -567,16 +559,12 @@ function ReserveNoticeSettings({
   meeting,
   onUpdateMeeting,
   templateOptions,
-  selectedTemplate,
-  templateTokens,
-  templateContext,
   onOpenTemplateManager,
   onDraftChange,
 }) {
   const [templateKey, setTemplateKey] = useState(meeting.notificationTemplateKey ?? '')
   const [executiveName, setExecutiveName] = useState(meeting.notificationConfig?.executiveName ?? '')
   const [secretaryName, setSecretaryName] = useState(meeting.notificationConfig?.secretaryName ?? '')
-  const visibleTokens = templateTokens ?? []
 
   function syncDraft(patch = {}) {
     onDraftChange?.({
@@ -604,7 +592,9 @@ function ReserveNoticeSettings({
     <div className="reserve-notice-settings">
       <div className="reserve-notice-settings-head">
         <strong>通知设置</strong>
-        <span>仅影响通知文案</span>
+        <button className="ghost-button" onClick={saveNotificationConfig}>
+          保存设置
+        </button>
       </div>
       <div className="reserve-notice-settings-grid">
         <label className="field">
@@ -620,7 +610,7 @@ function ReserveNoticeSettings({
             <option value="">自动匹配</option>
             {templateOptions.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.isBuiltIn ? `${option.label}（内置）` : `${option.label}（自定义）`}
+                {option.label}
               </option>
             ))}
           </select>
@@ -631,82 +621,106 @@ function ReserveNoticeSettings({
             管理模板
           </button>
         </div>
-        {visibleTokens.includes('【高管名称】') ? (
-          <label className="field">
-            <span>高管名称</span>
-            <input
-              value={executiveName}
-              placeholder="按需填写"
-              onChange={(event) => {
-                const nextValue = event.target.value
-                setExecutiveName(nextValue)
-                syncDraft({ executiveName: nextValue })
-              }}
-            />
-          </label>
-        ) : null}
-        {visibleTokens.includes('【秘书名称】') ? (
-          <label className="field">
-            <span>秘书名称</span>
-            <input
-              value={secretaryName}
-              placeholder="默认 Robin"
-              onChange={(event) => {
-                const nextValue = event.target.value
-                setSecretaryName(nextValue)
-                syncDraft({ secretaryName: nextValue })
-              }}
-            />
-          </label>
-        ) : null}
-      </div>
-      <div className="reserve-notice-template-inspector">
-        <div className="reserve-notice-template-card">
-          <div className="reserve-notice-template-card-head">
-            <strong>模板原文</strong>
-            <span>{selectedTemplate?.label ?? '自动匹配模板'}</span>
-          </div>
-          <pre>{selectedTemplate?.content ?? BUILT_IN_NOTICE_TEMPLATES.general.content}</pre>
-        </div>
-        <div className="reserve-notice-template-card">
-          <div className="reserve-notice-template-card-head">
-            <strong>变量映射</strong>
-            <span>仅显示已用变量</span>
-          </div>
-          <div className="reserve-notice-template-variable-grid">
-            {visibleTokens.length > 0 ? (
-              visibleTokens.map((token) => (
-                <div
-                  key={token}
-                  className={
-                    EDITABLE_NOTICE_TOKENS.has(token)
-                      ? 'reserve-notice-template-variable-row reserve-notice-template-variable-row-editable'
-                      : 'reserve-notice-template-variable-row'
-                  }
-                >
-                  <strong>{token}</strong>
-                  <span>{templateContext?.[token] ?? '无'}</span>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">未使用变量</div>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="reserve-notice-settings-actions">
-        <button className="ghost-button" onClick={saveNotificationConfig}>
-          保存通知设置
-        </button>
+        <label className="field">
+          <span>高管名称</span>
+          <input
+            value={executiveName}
+            placeholder="按需填写"
+            onChange={(event) => {
+              const nextValue = event.target.value
+              setExecutiveName(nextValue)
+              syncDraft({ executiveName: nextValue })
+            }}
+          />
+        </label>
+        <label className="field">
+          <span>秘书名称</span>
+          <input
+            value={secretaryName}
+            placeholder="默认 Robin"
+            onChange={(event) => {
+              const nextValue = event.target.value
+              setSecretaryName(nextValue)
+              syncDraft({ secretaryName: nextValue })
+            }}
+          />
+        </label>
       </div>
     </div>
   )
 }
 
+function ReserveNoticeTemplateSource({ selectedTemplate }) {
+  return (
+    <div className="reserve-notice-template-card reserve-notice-template-source-card">
+      <div className="reserve-notice-template-card-head">
+        <strong>模板原文</strong>
+        <span>{selectedTemplate?.label ?? '自动匹配模板'}</span>
+      </div>
+      <pre>{selectedTemplate?.content ?? BUILT_IN_NOTICE_TEMPLATES.general.content}</pre>
+    </div>
+  )
+}
+
+function ReserveNoticeVariableMapping({ templateTokens, templateContext }) {
+  const visibleTokens = templateTokens ?? []
+
+  return (
+    <div className="reserve-notice-template-card reserve-notice-variable-card">
+      <div className="reserve-notice-template-card-head">
+        <strong>变量映射</strong>
+        <span>仅显示已用变量</span>
+      </div>
+      <div className="reserve-notice-template-variable-grid">
+        {visibleTokens.length > 0 ? (
+          visibleTokens.map((token) => (
+            <div
+              key={token}
+              className={
+                EDITABLE_NOTICE_TOKENS.has(token)
+                  ? 'reserve-notice-template-variable-row reserve-notice-template-variable-row-editable'
+                  : 'reserve-notice-template-variable-row'
+              }
+            >
+              <strong>{token}</strong>
+              <span>{templateContext?.[token] ?? '无'}</span>
+            </div>
+          ))
+        ) : (
+          <div className="empty-state">未使用变量</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function getInitialTemplateDrafts(templates, disabledBuiltInKeys = []) {
+  const customTemplates = normalizeNoticeTemplates(templates)
+  const customByKey = new Map(customTemplates.map((template) => [template.key, template]))
+  const hiddenBuiltIns = new Set(Array.isArray(disabledBuiltInKeys) ? disabledBuiltInKeys : [])
+  const builtInDrafts = Object.values(BUILT_IN_NOTICE_TEMPLATES)
+    .filter((template) => !hiddenBuiltIns.has(template.key))
+    .map((template) => ({
+      ...template,
+      ...(customByKey.get(template.key) ?? {}),
+      isBuiltIn: false,
+    }))
+  const customOnlyDrafts = customTemplates.filter((template) => !BUILT_IN_NOTICE_TEMPLATES[template.key])
+
+  return [...builtInDrafts, ...customOnlyDrafts]
+}
+
 function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, onSave }) {
-  const [drafts, setDrafts] = useState(() => normalizeNoticeTemplates(templates))
-  const [hiddenBuiltIns, setHiddenBuiltIns] = useState(() => disabledBuiltInKeys)
-  const [selectedKey, setSelectedKey] = useState(() => normalizeNoticeTemplates(templates)[0]?.key ?? '')
+  const initialDrafts = useMemo(
+    () => getInitialTemplateDrafts(templates, disabledBuiltInKeys),
+    [disabledBuiltInKeys, templates],
+  )
+  const [drafts, setDrafts] = useState(() => initialDrafts)
+  const [deletedBuiltInKeys, setDeletedBuiltInKeys] = useState(() =>
+    Array.from(new Set(Array.isArray(disabledBuiltInKeys) ? disabledBuiltInKeys : [])),
+  )
+  const [selectedKey, setSelectedKey] = useState(() => initialDrafts[0]?.key ?? '')
+  const templateContentRef = useRef(null)
 
   const selectedTemplate = drafts.find((item) => item.key === selectedKey) ?? drafts[0] ?? null
 
@@ -721,29 +735,17 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
     setSelectedKey(template.key)
   }
 
-  function duplicateBuiltIn(templateKey) {
-    const builtIn = BUILT_IN_NOTICE_TEMPLATES[templateKey]
-    if (!builtIn) return
+  function duplicateTemplate(sourceTemplate) {
+    if (!sourceTemplate) return
 
-    const template = {
+    const nextTemplate = {
       key: `custom-${crypto.randomUUID()}`,
-      label: `${builtIn.label}（副本）`,
-      content: builtIn.content,
+      label: `${sourceTemplate.label}（副本）`,
+      content: sourceTemplate.content,
       isBuiltIn: false,
     }
-    setDrafts((current) => [...current, template])
-    setSelectedKey(template.key)
-  }
-
-  function hideBuiltIn(templateKey) {
-    setHiddenBuiltIns((current) => Array.from(new Set([...current, templateKey])))
-    if (selectedKey === templateKey) {
-      setSelectedKey(drafts[0]?.key ?? '')
-    }
-  }
-
-  function restoreBuiltIn(templateKey) {
-    setHiddenBuiltIns((current) => current.filter((key) => key !== templateKey))
+    setDrafts((current) => [...current, nextTemplate])
+    setSelectedKey(nextTemplate.key)
   }
 
   function updateTemplate(key, patch) {
@@ -752,7 +754,27 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
     )
   }
 
+  function insertVariableToken(token) {
+    if (!selectedTemplate) return
+
+    const textarea = templateContentRef.current
+    const currentContent = selectedTemplate.content ?? ''
+    const selectionStart = typeof textarea?.selectionStart === 'number' ? textarea.selectionStart : currentContent.length
+    const selectionEnd = typeof textarea?.selectionEnd === 'number' ? textarea.selectionEnd : currentContent.length
+    const nextContent = `${currentContent.slice(0, selectionStart)}${token}${currentContent.slice(selectionEnd)}`
+    const nextCursor = selectionStart + token.length
+
+    updateTemplate(selectedTemplate.key, { content: nextContent })
+    window.requestAnimationFrame(() => {
+      templateContentRef.current?.focus()
+      templateContentRef.current?.setSelectionRange(nextCursor, nextCursor)
+    })
+  }
+
   function deleteTemplate(key) {
+    if (BUILT_IN_NOTICE_TEMPLATES[key]) {
+      setDeletedBuiltInKeys((current) => Array.from(new Set([...current, key])))
+    }
     setDrafts((current) => current.filter((template) => template.key !== key))
     if (selectedKey === key) {
       const fallback = drafts.find((template) => template.key !== key)
@@ -766,7 +788,7 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
         <div className="reserve-template-modal-head">
           <div>
             <h3>管理通知模板</h3>
-            <p>内置模板只读，可复制为自定义模板；自定义模板可新增、修改和删除。</p>
+            <p>所有模板均可直接编辑、复制和删除。删除默认模板后，可新增模板重新配置通知文案。</p>
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label="关闭模板管理">
             <X size={18} />
@@ -776,55 +798,7 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
         <div className="reserve-template-modal-layout">
           <div className="reserve-template-library">
             <div className="reserve-template-section-head">
-              <strong>内置模板</strong>
-            </div>
-            <div className="reserve-template-list">
-              {Object.values(BUILT_IN_NOTICE_TEMPLATES)
-                .filter((template) => !hiddenBuiltIns.includes(template.key))
-                .map((template) => (
-                  <div key={template.key} className="reserve-template-list-item reserve-template-list-item-built-in">
-                    <div>
-                      <strong>{template.label}</strong>
-                      <span>内置模板，可复制或隐藏</span>
-                    </div>
-                    <div className="reserve-template-inline-actions">
-                      <button type="button" className="icon-button" onClick={() => duplicateBuiltIn(template.key)} aria-label={`复制模板 ${template.label}`}>
-                        <FilePlus2 size={16} />
-                      </button>
-                      <button type="button" className="icon-button danger-button-ghost" onClick={() => hideBuiltIn(template.key)} aria-label={`隐藏模板 ${template.label}`}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            {hiddenBuiltIns.length > 0 ? (
-              <>
-                <div className="reserve-template-section-head reserve-template-section-head-spaced">
-                  <strong>已隐藏内置模板</strong>
-                </div>
-                <div className="reserve-template-list">
-                  {BUILT_IN_NOTICE_TEMPLATE_KEYS.filter((key) => hiddenBuiltIns.includes(key)).map((key) => {
-                    const template = BUILT_IN_NOTICE_TEMPLATES[key]
-                    return (
-                      <div key={template.key} className="reserve-template-list-item">
-                        <div>
-                          <strong>{template.label}</strong>
-                          <span>已隐藏，可恢复使用</span>
-                        </div>
-                        <button type="button" className="ghost-button" onClick={() => restoreBuiltIn(template.key)}>
-                          恢复
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
-            ) : null}
-
-            <div className="reserve-template-section-head reserve-template-section-head-spaced">
-              <strong>自定义模板</strong>
+              <strong>模板库</strong>
               <button type="button" className="ghost-button" onClick={addTemplate}>
                 <FilePlus2 size={16} />
                 新增模板
@@ -846,12 +820,36 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
                   >
                     <div>
                       <strong>{template.label}</strong>
-                      <span>自定义模板</span>
+                      <span>{BUILT_IN_NOTICE_TEMPLATES[template.key] ? '默认模板，可编辑' : '模板'}</span>
+                    </div>
+                    <div className="reserve-template-inline-actions">
+                      <button
+                        type="button"
+                        className="icon-button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          duplicateTemplate(template)
+                        }}
+                        aria-label={`复制模板 ${template.label}`}
+                      >
+                        <FilePlus2 size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button danger-button-ghost"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          deleteTemplate(template.key)
+                        }}
+                        aria-label={`删除模板 ${template.label}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </button>
                 ))
               ) : (
-                <div className="empty-state">暂无自定义模板</div>
+                <div className="empty-state">暂无模板</div>
               )}
             </div>
           </div>
@@ -869,6 +867,7 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
                 <label className="field">
                   <span>模板内容</span>
                   <textarea
+                    ref={templateContentRef}
                     rows="10"
                     value={selectedTemplate.content}
                     onChange={(event) => updateTemplate(selectedTemplate.key, { content: event.target.value })}
@@ -883,31 +882,16 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
                         key={token}
                         type="button"
                         className="reserve-template-variable"
-                        onClick={() =>
-                          updateTemplate(selectedTemplate.key, {
-                            content: `${selectedTemplate.content}${selectedTemplate.content ? '\n' : ''}${token}`,
-                          })
-                        }
+                        onClick={() => insertVariableToken(token)}
                       >
                         {token}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                <div className="reserve-template-editor-actions">
-                  <button
-                    type="button"
-                    className="danger-button"
-                    onClick={() => deleteTemplate(selectedTemplate.key)}
-                  >
-                    <Trash2 size={16} />
-                    删除模板
-                  </button>
-                </div>
               </>
             ) : (
-              <div className="empty-state">请选择一个自定义模板进行编辑。</div>
+              <div className="empty-state">请选择一个模板进行编辑。</div>
             )}
           </div>
         </div>
@@ -919,7 +903,7 @@ function TemplateManagerModal({ templates, disabledBuiltInKeys = [], onClose, on
           <button
             type="button"
             className="primary-button"
-            onClick={() => onSave({ templates: drafts, disabledBuiltInKeys: hiddenBuiltIns })}
+            onClick={() => onSave({ templates: drafts, disabledBuiltInKeys: deletedBuiltInKeys })}
           >
             保存模板库
           </button>

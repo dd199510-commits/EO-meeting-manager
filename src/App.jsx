@@ -10,6 +10,7 @@ import {
 } from './data/meetingData'
 import { BatchImportModal } from './features/batchImport/BatchImportModal'
 import { ContactsView } from './features/contacts/ContactsView'
+import { HomeView } from './features/home/HomeView'
 import { LogsView } from './features/logs/LogsView'
 import { createLog, persistLogs, readLogs } from './features/logs/logUtils'
 import { MeetingsView } from './features/meetings/MeetingsView'
@@ -97,6 +98,10 @@ function clearAiPlanningState(state) {
 
 function App() {
   const PAGE_META = {
+    home: {
+      title: '首页',
+      description: '会议资产、排程进度、风险提醒与下一步动作',
+    },
     meetings: {
       title: '会议库',
       description: '会议资料、回收站与排程准备',
@@ -141,7 +146,7 @@ function App() {
   }
 
   const initialData = useMemo(() => readStorage(), [])
-  const [activeTab, setActiveTab] = useState('meetings')
+  const [activeTab, setActiveTab] = useState('home')
   const [meetings, setMeetings] = useState(initialData.meetings)
   const [scheduledMeetings, setScheduledMeetings] = useState(initialData.scheduled)
   const [contacts, setContacts] = useState(initialData.contacts)
@@ -170,7 +175,7 @@ function App() {
   const [editingMeeting, setEditingMeeting] = useState(null)
   const [isEditModalClosing, setIsEditModalClosing] = useState(false)
   const [showBatchImport, setShowBatchImport] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   useEffect(() => {
     persistStorage({
@@ -636,7 +641,7 @@ function App() {
       extraInviteeRefs: resolveAttendeeRefs(meeting.extraInvitees, contacts),
     }))
     const exportPayload = {
-      version: '2.5',
+      version: 'V3.5',
       exportedAt: new Date().toISOString(),
       meetings: exportedMeetings,
       scheduled: scheduledMeetings,
@@ -728,7 +733,7 @@ function App() {
 
   function handleExportReviewPlan() {
     const exportPayload = {
-      version: '2.5',
+      version: 'V3.5',
       exportedAt: new Date().toISOString(),
       reviewState,
     }
@@ -967,7 +972,7 @@ function App() {
           appendLog(
             'update',
             '通知模板库',
-            `保存 ${templates.length} 个自定义通知模板，隐藏 ${disabledBuiltInKeys.length} 个内置模板`,
+            `保存 ${templates.length} 个通知模板，删除 ${disabledBuiltInKeys.length} 个默认模板`,
           )
         }}
         onToggleSent={(scheduledMeetingId, selectedScheme) => {
@@ -1195,13 +1200,34 @@ function App() {
             </span>
             <span>
               Version
-              <strong>2.5</strong>
+              <strong>V3.5</strong>
             </span>
           </div>
         </header>
 
         <div className="app-page-content">
-          {activeTab === 'meetings' ? (
+          {activeTab === 'home' ? (
+            <HomeView
+              meetings={activeMeetings}
+              contacts={contacts}
+              planningTasks={planningTasks}
+              scheduledTaskOptions={buildScheduledTaskOptions()}
+              reviewConflicts={reviewConflicts}
+              logs={logs}
+              onCreateMeeting={() => openEditMeeting(createEmptyMeeting())}
+              onGoToMeetings={() => {
+                setActiveTab('meetings')
+                setMeetingTab('active')
+              }}
+              onGoToPlanner={() => {
+                setActiveTab('planner')
+                setPlanningTab('planner')
+              }}
+              onGoToReserveNotice={() => setActiveTab('reserveNotice')}
+              onGoToOutlookInvite={() => setActiveTab('outlookInvite')}
+              onGoToContacts={() => setActiveTab('contacts')}
+            />
+          ) : activeTab === 'meetings' ? (
             <MeetingsView
               contentTab={meetingTab}
               meetings={activeMeetings}

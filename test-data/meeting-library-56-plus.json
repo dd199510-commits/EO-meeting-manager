@@ -1,0 +1,1885 @@
+{
+  "version": "3.0 preview test-data",
+  "exportedAt": "2026-06-08T07:43:45.223Z",
+  "meetings": [
+    {
+      "id": "test-meeting-01",
+      "meetingPrefix": "【专项会议】",
+      "name": "CEO Office 周例会",
+      "attendees": "Robin\nLinda\nCathy\n未建档外部嘉宾",
+      "duration": 60,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 1,
+        "anchorDate": "2026-05-05"
+      },
+      "notes": "每周一上午优先，避免与 @季度经营评审 重叠；需避开 @CEO 外部会客准备 的准备窗口；必须安排在同一周 @产品路线图同步 之后。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-34",
+          "name": "季度经营评审",
+          "meetingId": "test-meeting-34",
+          "label": "季度经营评审"
+        },
+        {
+          "id": "test-meeting-18",
+          "name": "CEO 外部会客准备",
+          "meetingId": "test-meeting-18",
+          "label": "CEO 外部会客准备"
+        },
+        {
+          "id": "test-meeting-03",
+          "name": "产品路线图同步",
+          "meetingId": "test-meeting-03",
+          "label": "产品路线图同步"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "外部顾问 consultant@example.com",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-05",
+      "history": [
+        "2026-05-11",
+        "2026-05-18",
+        "2026-05-25"
+      ],
+      "status": "active",
+      "customOrder": 0
+    },
+    {
+      "id": "test-meeting-02",
+      "meetingPrefix": "【常规会议】",
+      "name": "经营数据晨会",
+      "attendees": "Robin\nLinda\nCathy\nDavid",
+      "duration": 30,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 2,
+        "anchorDate": "2026-05-07"
+      },
+      "notes": "只同步关键异常，30 分钟硬结束。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-07",
+      "history": [
+        "2026-05-12",
+        "2026-05-19",
+        "2026-05-26"
+      ],
+      "status": "active",
+      "customOrder": 1
+    },
+    {
+      "id": "test-meeting-03",
+      "meetingPrefix": "【常规会议】",
+      "name": "产品路线图同步",
+      "attendees": "Robin\nLinda\nAlice\nBob\nSophia",
+      "duration": 60,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 3,
+        "anchorDate": "2026-05-09"
+      },
+      "notes": "需要 Alice 提前一天更新 roadmap。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-09",
+      "history": [
+        "2026-05-13",
+        "2026-05-20",
+        "2026-05-27"
+      ],
+      "status": "active",
+      "customOrder": 2
+    },
+    {
+      "id": "test-meeting-04",
+      "meetingPrefix": "【常规会议】",
+      "name": "AI 项目推进会",
+      "attendees": "Robin\nLinda\nAlice\nBob\nSophia\nJack",
+      "duration": 75,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 4,
+        "anchorDate": "2026-05-04"
+      },
+      "notes": "需在 @月度产品委员会 完成关键技术议题确认之后安排。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-21",
+          "name": "月度产品委员会",
+          "meetingId": "test-meeting-21",
+          "label": "月度产品委员会"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-04",
+      "history": [
+        "2026-05-14",
+        "2026-05-21",
+        "2026-05-28"
+      ],
+      "status": "active",
+      "customOrder": 3
+    },
+    {
+      "id": "test-meeting-05",
+      "meetingPrefix": "【常规会议】",
+      "name": "销售 Pipeline Review",
+      "attendees": "Robin\nEmma\nFrank",
+      "duration": 60,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 2,
+        "anchorDate": "2026-05-10"
+      },
+      "notes": "周二下午优先，需 Emma 和 Frank 同时参会。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-10",
+      "history": [
+        "2026-05-15",
+        "2026-05-22",
+        "2026-05-29"
+      ],
+      "status": "active",
+      "customOrder": 4
+    },
+    {
+      "id": "test-meeting-06",
+      "meetingPrefix": "【外部会议】",
+      "name": "客户成功升级会",
+      "attendees": "Robin\nEmma\nFrank\nNoah",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 5,
+        "anchorDate": "2026-05-07"
+      },
+      "notes": "仅讨论高风险客户。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-07",
+      "history": [
+        "2026-05-16",
+        "2026-05-23",
+        "2026-05-25"
+      ],
+      "status": "active",
+      "customOrder": 5
+    },
+    {
+      "id": "test-meeting-07",
+      "meetingPrefix": "【专项会议】",
+      "name": "供应链风险同步",
+      "attendees": "Linda\nIrene\nLeo\nQueen\nUma",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 3,
+        "anchorDate": "2026-05-06"
+      },
+      "notes": "避免周三 10:00 前。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-06",
+      "history": [
+        "2026-05-17",
+        "2026-05-24",
+        "2026-05-26"
+      ],
+      "status": "active",
+      "customOrder": 6
+    },
+    {
+      "id": "test-meeting-08",
+      "meetingPrefix": "【常规会议】",
+      "name": "运营日报复盘",
+      "attendees": "Linda\nIrene\nLeo\nQueen\nUma\nWendy",
+      "duration": 30,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 5,
+        "anchorDate": "2026-05-09"
+      },
+      "notes": "周五收口本周动作，需汇总 @销售 Pipeline Review 的关键客户风险。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-05",
+          "name": "销售 Pipeline Review",
+          "meetingId": "test-meeting-05",
+          "label": "销售 Pipeline Review"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-09",
+      "history": [
+        "2026-05-11",
+        "2026-05-18",
+        "2026-05-27"
+      ],
+      "status": "active",
+      "customOrder": 7
+    },
+    {
+      "id": "test-meeting-09",
+      "meetingPrefix": "【常规会议】",
+      "name": "法务合规例会",
+      "attendees": "Linda\nCathy\nHenry",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 2,
+        "monthSpec": 1,
+        "daySpec": 4,
+        "anchorDate": "2026-05-09"
+      },
+      "notes": "隔周四，需 Henry 到场；避免与 @CEO 外部会客准备 同半天。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-18",
+          "name": "CEO 外部会客准备",
+          "meetingId": "test-meeting-18",
+          "label": "CEO 外部会客准备"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-09",
+      "history": [
+        "2026-05-12",
+        "2026-05-19",
+        "2026-05-28"
+      ],
+      "status": "active",
+      "customOrder": 8
+    },
+    {
+      "id": "test-meeting-10",
+      "meetingPrefix": "【常规会议】",
+      "name": "安全与权限审查",
+      "attendees": "Linda\nCathy\nHenry\nPeter",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 2,
+        "monthSpec": 1,
+        "daySpec": 2,
+        "anchorDate": "2026-05-08"
+      },
+      "notes": "隔周二，避免与 @销售 Pipeline Review 冲突。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-05",
+          "name": "销售 Pipeline Review",
+          "meetingId": "test-meeting-05",
+          "label": "销售 Pipeline Review"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "外部顾问 consultant@example.com",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-08",
+      "history": [
+        "2026-05-13",
+        "2026-05-20",
+        "2026-05-29"
+      ],
+      "status": "active",
+      "customOrder": 9
+    },
+    {
+      "id": "test-meeting-11",
+      "meetingPrefix": "【外部会议】",
+      "name": "HR 组织议题同步",
+      "attendees": "Linda\nGrace\nQueen\nWendy\n未建档外部嘉宾",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 1,
+        "anchorDate": "2026-05-08"
+      },
+      "notes": "每周一下午，涉及人员变动需保密。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-08",
+      "history": [
+        "2026-05-14",
+        "2026-05-21",
+        "2026-05-25"
+      ],
+      "status": "active",
+      "customOrder": 10
+    },
+    {
+      "id": "test-meeting-12",
+      "meetingPrefix": "【常规会议】",
+      "name": "行政资源协调会",
+      "attendees": "Linda\nGrace\nQueen\nWendy",
+      "duration": 30,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 3,
+        "anchorDate": "2026-05-04"
+      },
+      "notes": "短会，主要确认场地与车辆。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "Ray 秘书",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ray"
+      ],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-04",
+      "history": [
+        "2026-05-15",
+        "2026-05-22",
+        "2026-05-26"
+      ],
+      "status": "active",
+      "customOrder": 11
+    },
+    {
+      "id": "test-meeting-13",
+      "meetingPrefix": "【专项会议】",
+      "name": "海外市场周会",
+      "attendees": "Robin\nXavier\nYuki",
+      "duration": 60,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 4,
+        "anchorDate": "2026-05-06"
+      },
+      "notes": "考虑日本区时差，不晚于北京时间 16:00；必须安排在同一周 @产品路线图同步 之后。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-03",
+          "name": "产品路线图同步",
+          "meetingId": "test-meeting-03",
+          "label": "产品路线图同步"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-06",
+      "history": [
+        "2026-05-16",
+        "2026-05-23",
+        "2026-05-27"
+      ],
+      "status": "active",
+      "customOrder": 12
+    },
+    {
+      "id": "test-meeting-14",
+      "meetingPrefix": "【常规会议】",
+      "name": "品牌传播选题会",
+      "attendees": "Robin\nEmma\nFrank\nNoah",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 2,
+        "anchorDate": "2026-05-05"
+      },
+      "notes": "需 Victor 提供 PR 风险判断。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "外部律师 legal.partner@example.com、未知供应商联系人",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-05",
+      "history": [
+        "2026-05-17",
+        "2026-05-24",
+        "2026-05-28"
+      ],
+      "status": "active",
+      "customOrder": 13
+    },
+    {
+      "id": "test-meeting-15",
+      "meetingPrefix": "【常规会议】",
+      "name": "数据指标校准会",
+      "attendees": "Robin\nLinda\nAlice\nBob\nSophia",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 5,
+        "anchorDate": "2026-05-09"
+      },
+      "notes": "需要 Kate 提前刷新指标口径，并对齐 @行政资源协调会 涉及的资源口径。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-12",
+          "name": "行政资源协调会",
+          "meetingId": "test-meeting-12",
+          "label": "行政资源协调会"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-09",
+      "history": [
+        "2026-05-11",
+        "2026-05-18",
+        "2026-05-29"
+      ],
+      "status": "active",
+      "customOrder": 14
+    },
+    {
+      "id": "test-meeting-16",
+      "meetingPrefix": "【外部会议】",
+      "name": "质量问题 War Room",
+      "attendees": "Linda\nCathy\nHenry\nPeter\nTom\nZoe",
+      "duration": 60,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 3,
+        "anchorDate": "2026-05-08"
+      },
+      "notes": "若无 P0/P1 问题可取消。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-08",
+      "history": [
+        "2026-05-12",
+        "2026-05-19",
+        "2026-05-25"
+      ],
+      "status": "active",
+      "customOrder": 15
+    },
+    {
+      "id": "test-meeting-17",
+      "meetingPrefix": "【常规会议】",
+      "name": "采购重点事项同步",
+      "attendees": "Linda\nIrene\nLeo",
+      "duration": 45,
+      "frequency": {
+        "type": "weekly",
+        "interval": 2,
+        "monthSpec": 1,
+        "daySpec": 1,
+        "anchorDate": "2026-05-07"
+      },
+      "notes": "隔周一，需 Uma 准备供应商状态；避免与 @CEO 外部会客准备 同半天。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-18",
+          "name": "CEO 外部会客准备",
+          "meetingId": "test-meeting-18",
+          "label": "CEO 外部会客准备"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-07",
+      "history": [
+        "2026-05-13",
+        "2026-05-20",
+        "2026-05-26"
+      ],
+      "status": "active",
+      "customOrder": 16
+    },
+    {
+      "id": "test-meeting-18",
+      "meetingPrefix": "【常规会议】",
+      "name": "CEO 外部会客准备",
+      "attendees": "Linda\nGrace\nQueen\nWendy",
+      "duration": 30,
+      "frequency": {
+        "type": "weekly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 4,
+        "anchorDate": "2026-05-04"
+      },
+      "notes": "由 Wendy 汇总当周外部接待。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-04",
+      "history": [
+        "2026-05-14",
+        "2026-05-21",
+        "2026-05-27"
+      ],
+      "status": "active",
+      "customOrder": 17
+    },
+    {
+      "id": "test-meeting-19",
+      "meetingPrefix": "【专项会议】",
+      "name": "月度经营复盘",
+      "attendees": "Robin\nLinda\nCathy\nDavid\nEmma",
+      "duration": 120,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 5,
+        "anchorDate": "2026-05-05"
+      },
+      "notes": "每月第 5 日后，必须预留 2 小时。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "外部顾问 consultant@example.com",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-05",
+      "history": [
+        "2026-03-21",
+        "2026-04-21",
+        "2026-05-21"
+      ],
+      "status": "active",
+      "customOrder": 18
+    },
+    {
+      "id": "test-meeting-20",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度财务预算会",
+      "attendees": "Linda\nCathy\nHenry\nPeter\nTom\nZoe",
+      "duration": 90,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 8,
+        "anchorDate": "2026-05-08"
+      },
+      "notes": "需要 Cathy 提供预算差异表。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-08",
+      "history": [
+        "2026-03-22",
+        "2026-04-22",
+        "2026-05-22"
+      ],
+      "status": "active",
+      "customOrder": 19
+    },
+    {
+      "id": "test-meeting-21",
+      "meetingPrefix": "【外部会议】",
+      "name": "月度产品委员会",
+      "attendees": "Robin\nLinda\nAlice\n未建档外部嘉宾",
+      "duration": 120,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 12,
+        "anchorDate": "2026-05-12"
+      },
+      "notes": "需排在 @产品路线图同步 之后，用于确认路线图中的月度优先级。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-03",
+          "name": "产品路线图同步",
+          "meetingId": "test-meeting-03",
+          "label": "产品路线图同步"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-12",
+      "history": [
+        "2026-03-23",
+        "2026-04-23",
+        "2026-05-23"
+      ],
+      "status": "active",
+      "customOrder": 20
+    },
+    {
+      "id": "test-meeting-22",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度销售目标校准",
+      "attendees": "Robin\nEmma\nFrank\nNoah",
+      "duration": 90,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 15,
+        "anchorDate": "2026-05-15"
+      },
+      "notes": "需与 @月度财务预算会 至少间隔 1 天，并参考 @月度经营复盘 的经营口径。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-20",
+          "name": "月度财务预算会",
+          "meetingId": "test-meeting-20",
+          "label": "月度财务预算会"
+        },
+        {
+          "id": "test-meeting-19",
+          "name": "月度经营复盘",
+          "meetingId": "test-meeting-19",
+          "label": "月度经营复盘"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-15",
+      "history": [
+        "2026-03-24",
+        "2026-04-24",
+        "2026-05-24"
+      ],
+      "status": "active",
+      "customOrder": 21
+    },
+    {
+      "id": "test-meeting-23",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度市场投放复盘",
+      "attendees": "Robin\nEmma\nFrank\nNoah\nVictor",
+      "duration": 75,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 18,
+        "anchorDate": "2026-05-18"
+      },
+      "notes": "需 Frank 提前上传投放效果。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "Ray 秘书",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ray"
+      ],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-18",
+      "history": [
+        "2026-03-25",
+        "2026-04-25",
+        "2026-05-25"
+      ],
+      "status": "active",
+      "customOrder": 22
+    },
+    {
+      "id": "test-meeting-24",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度客户声音回顾",
+      "attendees": "Robin\nEmma\nFrank\nNoah\nVictor\nXavier",
+      "duration": 90,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 20,
+        "anchorDate": "2026-05-20"
+      },
+      "notes": "Noah 汇总 Top 客户反馈。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-20",
+      "history": [
+        "2026-03-26",
+        "2026-04-26",
+        "2026-05-26"
+      ],
+      "status": "active",
+      "customOrder": 23
+    },
+    {
+      "id": "test-meeting-25",
+      "meetingPrefix": "【专项会议】",
+      "name": "月度供应链 S&OP",
+      "attendees": "Linda\nIrene\nLeo",
+      "duration": 120,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 22,
+        "anchorDate": "2026-05-22"
+      },
+      "notes": "需 Leo 和 Emma 同时参会；避免与 @CEO 外部会客准备 同半天；必须安排在同一周 @产品路线图同步 之后。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-18",
+          "name": "CEO 外部会客准备",
+          "meetingId": "test-meeting-18",
+          "label": "CEO 外部会客准备"
+        },
+        {
+          "id": "test-meeting-03",
+          "name": "产品路线图同步",
+          "meetingId": "test-meeting-03",
+          "label": "产品路线图同步"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-22",
+      "history": [
+        "2026-03-03",
+        "2026-04-03",
+        "2026-05-03"
+      ],
+      "status": "active",
+      "customOrder": 24
+    },
+    {
+      "id": "test-meeting-26",
+      "meetingPrefix": "【外部会议】",
+      "name": "月度行政预算与资源会",
+      "attendees": "Linda\nGrace\nQueen\nWendy",
+      "duration": 60,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 24,
+        "anchorDate": "2026-05-24"
+      },
+      "notes": "Queen 准备预算执行情况。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-24",
+      "history": [
+        "2026-03-04",
+        "2026-04-04",
+        "2026-05-04"
+      ],
+      "status": "active",
+      "customOrder": 25
+    },
+    {
+      "id": "test-meeting-27",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度安全审计会",
+      "attendees": "Linda\nCathy\nHenry\nPeter\nTom",
+      "duration": 90,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 26,
+        "anchorDate": "2026-05-26"
+      },
+      "notes": "Peter 输出上月权限审计结果。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "外部律师 legal.partner@example.com、未知供应商联系人",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-26",
+      "history": [
+        "2026-03-05",
+        "2026-04-05",
+        "2026-05-05"
+      ],
+      "status": "active",
+      "customOrder": 26
+    },
+    {
+      "id": "test-meeting-28",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度招聘编制会",
+      "attendees": "Linda\nGrace\nQueen\nWendy",
+      "duration": 75,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 28,
+        "anchorDate": "2026-05-28"
+      },
+      "notes": "Grace 准备编制变更清单。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "外部顾问 consultant@example.com",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-28",
+      "history": [
+        "2026-03-06",
+        "2026-04-06",
+        "2026-05-06"
+      ],
+      "status": "active",
+      "customOrder": 27
+    },
+    {
+      "id": "test-meeting-29",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度数据治理委员会",
+      "attendees": "Robin\nLinda\nAlice",
+      "duration": 90,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 10,
+        "anchorDate": "2026-05-10"
+      },
+      "notes": "Kate 负责数据口径对齐，需参考 @月度行政预算与资源会 的资源口径。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-26",
+          "name": "月度行政预算与资源会",
+          "meetingId": "test-meeting-26",
+          "label": "月度行政预算与资源会"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-10",
+      "history": [
+        "2026-03-07",
+        "2026-04-07",
+        "2026-05-07"
+      ],
+      "status": "active",
+      "customOrder": 28
+    },
+    {
+      "id": "test-meeting-30",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度品牌与公关风险会",
+      "attendees": "Robin\nEmma\nFrank\nNoah",
+      "duration": 75,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 16,
+        "anchorDate": "2026-05-16"
+      },
+      "notes": "Victor 输出舆情风险。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-05-16",
+      "history": [
+        "2026-03-08",
+        "2026-04-08",
+        "2026-05-08"
+      ],
+      "status": "active",
+      "customOrder": 29
+    },
+    {
+      "id": "test-meeting-31",
+      "meetingPrefix": "【专项会议】",
+      "name": "月度法务合同审查会",
+      "attendees": "Linda\nCathy\nHenry\nPeter\nTom\n未建档外部嘉宾",
+      "duration": 60,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 19,
+        "anchorDate": "2026-05-19"
+      },
+      "notes": "Henry 需带合同风险台账。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-19",
+      "history": [
+        "2026-03-09",
+        "2026-04-09",
+        "2026-05-09"
+      ],
+      "status": "active",
+      "customOrder": 30
+    },
+    {
+      "id": "test-meeting-32",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度日本区业务会",
+      "attendees": "Robin\nXavier\nYuki\nEmma\nLeo",
+      "duration": 60,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 21,
+        "anchorDate": "2026-05-21"
+      },
+      "notes": "Yuki 参会，优先下午时段。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-05-21",
+      "history": [
+        "2026-03-10",
+        "2026-04-10",
+        "2026-05-10"
+      ],
+      "status": "active",
+      "customOrder": 31
+    },
+    {
+      "id": "test-meeting-33",
+      "meetingPrefix": "【常规会议】",
+      "name": "月度海外收入复盘",
+      "attendees": "Robin\nXavier\nYuki",
+      "duration": 90,
+      "frequency": {
+        "type": "monthly",
+        "interval": 1,
+        "monthSpec": 1,
+        "daySpec": 23,
+        "anchorDate": "2026-05-23"
+      },
+      "notes": "Xavier 汇总海外收入和风险；避免与 @CEO 外部会客准备 同日。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-18",
+          "name": "CEO 外部会客准备",
+          "meetingId": "test-meeting-18",
+          "label": "CEO 外部会客准备"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-05-23",
+      "history": [
+        "2026-03-11",
+        "2026-04-11",
+        "2026-05-11"
+      ],
+      "status": "active",
+      "customOrder": 32
+    },
+    {
+      "id": "test-meeting-34",
+      "meetingPrefix": "【常规会议】",
+      "name": "季度经营评审",
+      "attendees": "Robin\nLinda\nCathy\nDavid",
+      "duration": 180,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          1,
+          4,
+          7,
+          10
+        ],
+        "daySpec": 19,
+        "anchorDate": "2026-01-19"
+      },
+      "notes": "季度第一个月第 10 日附近，必须锁定半天窗口。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "Ray 秘书",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ray"
+      ],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-01-19",
+      "history": [
+        "2026-01-19",
+        "2026-04-13"
+      ],
+      "status": "active",
+      "customOrder": 33
+    },
+    {
+      "id": "test-meeting-35",
+      "meetingPrefix": "【常规会议】",
+      "name": "季度产品战略会",
+      "attendees": "Robin\nLinda\nAlice\nBob\nSophia",
+      "duration": 150,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          2,
+          5,
+          8,
+          11
+        ],
+        "daySpec": 20,
+        "anchorDate": "2026-02-20"
+      },
+      "notes": "需要产品、技术、数据联合准备。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-02-20",
+      "history": [
+        "2026-02-20",
+        "2026-05-14"
+      ],
+      "status": "active",
+      "customOrder": 34
+    },
+    {
+      "id": "test-meeting-36",
+      "meetingPrefix": "【外部会议】",
+      "name": "季度人才盘点会",
+      "attendees": "Linda\nGrace\nQueen\nWendy",
+      "duration": 120,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          3,
+          6,
+          9,
+          12
+        ],
+        "daySpec": 21,
+        "anchorDate": "2026-03-21"
+      },
+      "notes": "涉及敏感信息，只邀请核心人员；需避开 @月度海外收入复盘 的跨区参会时段。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-33",
+          "name": "月度海外收入复盘",
+          "meetingId": "test-meeting-33",
+          "label": "月度海外收入复盘"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-03-21",
+      "history": [
+        "2026-03-21",
+        "2026-06-15"
+      ],
+      "status": "active",
+      "customOrder": 35
+    },
+    {
+      "id": "test-meeting-37",
+      "meetingPrefix": "【专项会议】",
+      "name": "季度风险委员会",
+      "attendees": "Linda\nCathy\nHenry",
+      "duration": 120,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          1,
+          4,
+          7,
+          10
+        ],
+        "daySpec": 10,
+        "anchorDate": "2026-01-10"
+      },
+      "notes": "财务、法务、安全联合复盘；必须安排在同一周 @产品路线图同步 之后。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-03",
+          "name": "产品路线图同步",
+          "meetingId": "test-meeting-03",
+          "label": "产品路线图同步"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "外部顾问 consultant@example.com",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-01-10",
+      "history": [
+        "2026-01-10",
+        "2026-04-16"
+      ],
+      "status": "active",
+      "customOrder": 36
+    },
+    {
+      "id": "test-meeting-38",
+      "meetingPrefix": "【常规会议】",
+      "name": "季度供应商评审",
+      "attendees": "Linda\nIrene\nLeo\nQueen",
+      "duration": 120,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          2,
+          5,
+          8,
+          11
+        ],
+        "daySpec": 11,
+        "anchorDate": "2026-02-11"
+      },
+      "notes": "采购与供应链联合输出供应商评级。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-02-11",
+      "history": [
+        "2026-02-11",
+        "2026-05-17"
+      ],
+      "status": "active",
+      "customOrder": 37
+    },
+    {
+      "id": "test-meeting-39",
+      "meetingPrefix": "【常规会议】",
+      "name": "季度品牌战略复盘",
+      "attendees": "Robin\nEmma\nFrank\nNoah\nVictor",
+      "duration": 90,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          3,
+          6,
+          9,
+          12
+        ],
+        "daySpec": 12,
+        "anchorDate": "2026-03-12"
+      },
+      "notes": "品牌和 PR 联合复盘。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-03-12",
+      "history": [
+        "2026-03-12",
+        "2026-06-18"
+      ],
+      "status": "active",
+      "customOrder": 38
+    },
+    {
+      "id": "test-meeting-40",
+      "meetingPrefix": "【常规会议】",
+      "name": "半年度预算重估会",
+      "attendees": "Linda\nCathy\nHenry\nPeter\nTom\nZoe",
+      "duration": 150,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          6,
+          12
+        ],
+        "daySpec": 13,
+        "anchorDate": "2026-06-13"
+      },
+      "notes": "需要财务提前锁数。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "外部律师 legal.partner@example.com、未知供应商联系人",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-06-13",
+      "history": [
+        "2026-04-19",
+        "2026-06-13"
+      ],
+      "status": "active",
+      "customOrder": 39
+    },
+    {
+      "id": "test-meeting-41",
+      "meetingPrefix": "【外部会议】",
+      "name": "年度战略闭门会",
+      "attendees": "Robin\nLinda\nCathy\n未建档外部嘉宾",
+      "duration": 240,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          12
+        ],
+        "daySpec": 14,
+        "anchorDate": "2026-12-14"
+      },
+      "notes": "全天候备选，不能和 @CEO 外部会客准备 同日。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-18",
+          "name": "CEO 外部会客准备",
+          "meetingId": "test-meeting-18",
+          "label": "CEO 外部会客准备"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "formal",
+      "notificationConfig": {
+        "executiveName": "Robin",
+        "secretaryName": "Wendy"
+      },
+      "nextDate": "2026-12-14",
+      "history": [
+        "2026-05-10",
+        "2026-12-14"
+      ],
+      "status": "active",
+      "customOrder": 40
+    },
+    {
+      "id": "test-meeting-42",
+      "meetingPrefix": "【常规会议】",
+      "name": "年度组织架构评审",
+      "attendees": "Linda\nGrace\nQueen\nWendy",
+      "duration": 180,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          11
+        ],
+        "daySpec": 15,
+        "anchorDate": "2026-11-15"
+      },
+      "notes": "HR 与 CEO Office 提前准备材料。",
+      "noteMentions": [],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [],
+      "notificationTemplateKey": "brief",
+      "notificationConfig": {},
+      "nextDate": "2026-11-15",
+      "history": [
+        "2026-06-11",
+        "2026-11-15"
+      ],
+      "status": "active",
+      "customOrder": 41
+    },
+    {
+      "id": "test-meeting-43",
+      "meetingPrefix": "【专项会议】",
+      "name": "年度安全演练复盘",
+      "attendees": "Linda\nCathy\nHenry\nPeter\nTom",
+      "duration": 120,
+      "frequency": {
+        "type": "yearly",
+        "interval": 1,
+        "monthSpec": [
+          9
+        ],
+        "daySpec": 16,
+        "anchorDate": "2026-09-16"
+      },
+      "notes": "需要安全与技术联合参会，并参考 @半年度预算重估会 的预算假设。",
+      "noteMentions": [
+        {
+          "id": "test-meeting-40",
+          "name": "半年度预算重估会",
+          "meetingId": "test-meeting-40",
+          "label": "半年度预算重估会"
+        }
+      ],
+      "attendeeRefs": [],
+      "extraInvitees": "",
+      "extraInviteeRefs": [],
+      "secretaryInviteContactIds": [
+        "c-ceo-robin"
+      ],
+      "notificationTemplateKey": "",
+      "notificationConfig": {},
+      "nextDate": "2026-09-16",
+      "history": [
+        "2026-04-12",
+        "2026-09-16"
+      ],
+      "status": "active",
+      "customOrder": 42
+    }
+  ],
+  "scheduled": [],
+  "contacts": [
+    {
+      "id": "c-ceo-robin",
+      "name": "Robin",
+      "email": "robin@ceo-office.example.com",
+      "aliases": [
+        "罗宾",
+        "CEO"
+      ],
+      "secretaries": [
+        {
+          "id": "sec-robin-1",
+          "name": "Robin 秘书",
+          "email": "robin.assistant@ceo-office.example.com"
+        }
+      ],
+      "department": "CEO Office",
+      "title": "CEO",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-linda",
+      "name": "Linda",
+      "email": "linda@ceo-office.example.com",
+      "aliases": [
+        "Linda Li"
+      ],
+      "secretaries": [
+        {
+          "id": "sec-linda-1",
+          "name": "Linda 助理",
+          "email": "linda.assistant@ceo-office.example.com"
+        }
+      ],
+      "department": "CEO Office",
+      "title": "Chief of Staff",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-alice",
+      "name": "Alice",
+      "email": "alice@product.example.com",
+      "aliases": [
+        "Alice Zhang"
+      ],
+      "secretaries": [],
+      "department": "Product",
+      "title": "产品负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-bob",
+      "name": "Bob",
+      "email": "",
+      "aliases": [
+        "Bob Chen"
+      ],
+      "secretaries": [],
+      "department": "Product",
+      "title": "产品运营",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-cathy",
+      "name": "Cathy",
+      "email": "cathy@finance.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Finance",
+      "title": "财务负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-david",
+      "name": "David",
+      "email": "david@strategy.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Strategy",
+      "title": "战略负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-emma",
+      "name": "Emma",
+      "email": "emma@sales.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Sales",
+      "title": "销售负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-frank",
+      "name": "Frank",
+      "email": "frank@marketing.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Marketing",
+      "title": "市场负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-grace",
+      "name": "Grace",
+      "email": "grace@hr.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "HR",
+      "title": "HRBP",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-henry",
+      "name": "Henry",
+      "email": "henry@legal.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Legal",
+      "title": "法务负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-irene",
+      "name": "Irene",
+      "email": "irene@ops.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Operations",
+      "title": "运营负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-jack",
+      "name": "Jack",
+      "email": "jack@tech.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Technology",
+      "title": "技术负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-kate",
+      "name": "Kate",
+      "email": "kate@data.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Data",
+      "title": "数据负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-leo",
+      "name": "Leo",
+      "email": "leo@supply.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Supply Chain",
+      "title": "供应链负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-mia",
+      "name": "Mia",
+      "email": "mia@brand.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Brand",
+      "title": "品牌负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-noah",
+      "name": "Noah",
+      "email": "noah@customer.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Customer Success",
+      "title": "客户成功负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-olivia",
+      "name": "Olivia",
+      "email": "olivia@investor.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "IR",
+      "title": "投资者关系",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-peter",
+      "name": "Peter",
+      "email": "peter@security.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Security",
+      "title": "安全负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-queen",
+      "name": "Queen",
+      "email": "queen@admin.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Admin",
+      "title": "行政负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-ray",
+      "name": "Ray",
+      "email": "",
+      "aliases": [],
+      "secretaries": [
+        {
+          "id": "sec-ray-1",
+          "name": "Ray 秘书",
+          "email": "ray.assistant@business.example.com"
+        }
+      ],
+      "department": "Business",
+      "title": "业务负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-sophia",
+      "name": "Sophia",
+      "email": "sophia@design.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Design",
+      "title": "设计负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-tom",
+      "name": "Tom",
+      "email": "tom@qa.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "QA",
+      "title": "质量负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-uma",
+      "name": "Uma",
+      "email": "uma@procurement.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Procurement",
+      "title": "采购负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-victor",
+      "name": "Victor",
+      "email": "victor@pr.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "PR",
+      "title": "公关负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-wendy",
+      "name": "Wendy",
+      "email": "wendy@office.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "CEO Office",
+      "title": "会议统筹",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-xavier",
+      "name": "Xavier",
+      "email": "xavier@global.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Global",
+      "title": "海外负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-yuki",
+      "name": "Yuki",
+      "email": "yuki@japan.example.com",
+      "aliases": [],
+      "secretaries": [],
+      "department": "Japan",
+      "title": "日本区负责人",
+      "notes": "",
+      "status": "active"
+    },
+    {
+      "id": "c-zoe",
+      "name": "Zoe",
+      "email": "",
+      "aliases": [],
+      "secretaries": [],
+      "department": "PMO",
+      "title": "项目管理",
+      "notes": "",
+      "status": "active"
+    }
+  ],
+  "noticeTemplates": [],
+  "disabledNoticeTemplateKeys": [],
+  "logs": [
+    {
+      "id": "log-test-1",
+      "actionType": "import",
+      "targetName": "测试会议库",
+      "detail": "生成 43 条周期会议用于 3.0 preview 测试",
+      "changes": [],
+      "timestamp": 1780904625224
+    },
+    {
+      "id": "log-test-2",
+      "actionType": "create",
+      "targetName": "会议库测试数据",
+      "detail": "覆盖周会、月会、季度会、半年度会和年度会",
+      "changes": [],
+      "timestamp": 1780904025224
+    }
+  ],
+  "aiState": null,
+  "reviewState": null,
+  "planningTasks": [],
+  "reserveNoticeSchemeStatus": {}
+}

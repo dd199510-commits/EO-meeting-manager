@@ -225,7 +225,7 @@ function isRetryableError(error) {
 
 function getGeminiBaseUrls(model, preferredBaseUrl) {
   const normalizedModel = String(model || '')
-  const candidates = normalizedModel.startsWith('gemini-3.1')
+  const candidates = normalizedModel.startsWith('gemini-3')
     ? [GEMINI_ALPHA_BASE_URL, GEMINI_BASE_URL]
     : [preferredBaseUrl, GEMINI_ALPHA_BASE_URL]
 

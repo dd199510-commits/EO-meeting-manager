@@ -205,6 +205,7 @@ function getQueueSourceLabel(job) {
 
 const MODEL_PRESETS = {
   gemini: [
+    { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
     { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview' },
     { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
@@ -221,7 +222,7 @@ const MODEL_PRESETS = {
 }
 
 const PROVIDER_OPTIONS = [
-  { value: 'gemini', label: 'Gemini', defaultModel: 'gemini-3.1-pro-preview', keyLabel: 'Gemini API Key', keyPlaceholder: 'AIza...' },
+  { value: 'gemini', label: 'Gemini', defaultModel: 'gemini-3.5-flash', keyLabel: 'Gemini API Key', keyPlaceholder: 'AIza...' },
   { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-5.4', keyLabel: 'OpenAI API Key', keyPlaceholder: 'sk-...' },
   { value: 'deepseek', label: 'DeepSeek', defaultModel: 'deepseek-v4-pro', keyLabel: 'DeepSeek API Key', keyPlaceholder: 'sk-...' },
 ]
@@ -395,7 +396,7 @@ export function PlanningWorkbench({
   const latestBatchJob = currentBatchJobs[0] ?? null
   const aiSettings = aiState.settings ?? {
     provider: 'gemini',
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3.5-flash',
     autoImportResult: true,
     autoImportToReview: false,
     lastImportedJobId: '',

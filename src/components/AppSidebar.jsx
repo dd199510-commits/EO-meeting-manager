@@ -6,6 +6,7 @@ import {
   ContactRound,
   Download,
   FolderKanban,
+  House,
   Megaphone,
   PanelLeftClose,
   PanelLeftOpen,
@@ -15,6 +16,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 
 const TAB_META = {
+  home: { label: '首页', icon: House },
   meetings: { label: '会议库', icon: FolderKanban },
   planner: { label: '排程', icon: CalendarRange },
   reserveNotice: { label: '预留通知', icon: Megaphone },
@@ -53,9 +55,9 @@ export function AppSidebar({
         </div>
         {collapsed ? null : (
           <div className="app-sidebar-brand-copy">
-            <span className="app-sidebar-eyebrow">CEO Office</span>
+            <span className="app-sidebar-eyebrow">总裁办</span>
             <strong>会议管理系统</strong>
-            <span>Version 2.5</span>
+            <span>Version V3.5</span>
           </div>
         )}
         <button
@@ -95,9 +97,9 @@ export function AppSidebar({
             }
             onClick={() => setBackupMenuOpen((current) => !current)}
             type="button"
-            title="系统备份"
+            title="数据备份"
           >
-            {collapsed ? <Download size={16} /> : '系统备份'}
+            {collapsed ? <Download size={16} /> : '数据备份'}
             {collapsed ? null : <ChevronDown size={16} />}
           </button>
           {backupMenuOpen ? (

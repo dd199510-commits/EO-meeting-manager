@@ -72,7 +72,40 @@ function normalizeProvider(provider) {
 function getDefaultModel(provider) {
   if (provider === 'deepseek') return 'deepseek-v4-pro'
   if (provider === 'openai') return 'gpt-5.4'
-  return 'gemini-3.1-pro-preview'
+  return 'gemini-3.5-flash'
+}
+
+function toGeminiSchema(schema) {
+  if (!schema || typeof schema !== 'object') return undefined
+
+  if (Array.isArray(schema.type)) {
+    return toGeminiSchema({ ...schema, type: schema.type[0] })
+  }
+
+  const normalized = {}
+
+  if (typeof schema.type === 'string') {
+    normalized.type = schema.type.toUpperCase()
+  }
+
+  if (schema.description) normalized.description = schema.description
+  if (Array.isArray(schema.required)) normalized.required = schema.required
+
+  if (schema.properties && typeof schema.properties === 'object') {
+    normalized.properties = Object.fromEntries(
+      Object.entries(schema.properties).map(([key, value]) => [key, toGeminiSchema(value)]),
+    )
+  }
+
+  if (schema.items) {
+    normalized.items = toGeminiSchema(schema.items)
+  }
+
+  if (Array.isArray(schema.enum)) {
+    normalized.enum = schema.enum
+  }
+
+  return normalized
 }
 
 function createJobId(prefix = 'job') {
@@ -266,7 +299,7 @@ async function requestGemini({ apiKey, model, prompt }) {
         ],
         generationConfig: {
           responseMimeType: 'application/json',
-          responseSchema: MEETING_SCHEDULE_SCHEMA,
+          responseSchema: toGeminiSchema(MEETING_SCHEDULE_SCHEMA),
         },
       }),
     },
