@@ -15,6 +15,13 @@ release
 *.local
 .codex-tmp-asar
 
+# 本地备份与私有资料（不要提交到公开仓库）
+backup-*/
+使用说明书.pdf
+.env
+.env.*
+meeting-manager-export-*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

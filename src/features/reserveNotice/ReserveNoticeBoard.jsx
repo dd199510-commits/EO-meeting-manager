@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Copy, FilePlus2, PencilLine, Search, Trash2, X } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
+import { toast } from '../../components/Feedback'
 import { splitAttendees } from '../../lib/contacts'
 import {
   BUILT_IN_NOTICE_TEMPLATES,
@@ -128,8 +129,13 @@ function extractTemplateTokens(content) {
 
 const EDITABLE_NOTICE_TOKENS = new Set(['【高管名称】', '【秘书名称】'])
 
-function copyText(text) {
-  return navigator.clipboard.writeText(text)
+async function copyText(text, label = '通知文案') {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast(`${label}已复制到剪贴板`)
+  } catch {
+    toast('复制失败，请检查剪贴板权限', 'error')
+  }
 }
 
 export function ReserveNoticeBoard({
@@ -360,6 +366,10 @@ export function ReserveNoticeBoard({
 
       <div className="reserve-notice-layout">
         <div className="reserve-notice-list-panel">
+          <div className="rn-panel-kicker">
+            <strong>会议选择</strong>
+            <span>{filteredRows.length} / {rows.length} 条通知</span>
+          </div>
           <div className="reserve-notice-toolbar">
             <label className="final-check-search">
               <Search size={15} />
@@ -413,14 +423,25 @@ export function ReserveNoticeBoard({
                       {FREQUENCY_LABELS[row.scheduledMeeting.frequency] ?? '不定期'}
                     </span>
                   </div>
-                  <label className="final-check-checkbox" onClick={(event) => event.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={row.sent}
-                      onChange={() => onToggleSent(row.id, selectedScheme)}
-                    />
-                    <span>{row.sent ? '已发送' : '未发送'}</span>
-                  </label>
+                  <div className="reserve-notice-item-side" onClick={(event) => event.stopPropagation()}>
+                    <button
+                      type="button"
+                      className="icon-button rn-copy-button"
+                      onClick={() => copyText(row.id === selectedRow?.id ? selectedPreviewText || row.text : row.text, `「${row.scheduledMeeting.name}」通知`)}
+                      aria-label={`复制 ${row.scheduledMeeting.name} 的通知文案`}
+                      title="一键复制通知文案"
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <label className="final-check-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={row.sent}
+                        onChange={() => onToggleSent(row.id, selectedScheme)}
+                      />
+                      <span>{row.sent ? '已发送' : '未发送'}</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="reserve-notice-item-meta">
@@ -450,6 +471,10 @@ export function ReserveNoticeBoard({
         </div>
 
         <div className="reserve-notice-preview-panel">
+          <div className="rn-panel-kicker rn-panel-kicker-accent">
+            <strong>通知生成与模板配置</strong>
+            <span>{selectedRow ? '左侧选择会议后在此复制文案' : '请先在左侧选择会议'}</span>
+          </div>
           {selectedRow ? (
             <>
               <div className="reserve-notice-preview-head">

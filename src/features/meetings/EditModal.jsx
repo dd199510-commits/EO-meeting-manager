@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
+import { confirmDialog } from '../../components/Feedback'
 import {
   FREQUENCY_LABELS,
   MONTHS,
@@ -60,14 +61,49 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
     })
   }
 
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(meeting)
+
+  async function requestClose() {
+    if (isDirty) {
+      const discard = await confirmDialog({
+        title: '放弃修改',
+        message: '当前会议资料有未保存的修改，确定放弃并关闭吗？',
+        confirmLabel: '放弃修改',
+        danger: true,
+      })
+      if (!discard) return
+    }
+    onClose()
+  }
+
+  // 注意：Hook 需在提前 return 之前声明
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!open) return undefined
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') requestClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isDirty, formData])
+
   if (!meeting || !formData) return null
 
   return (
-    <div className={open && !isClosing ? 'modal-backdrop modal-open' : 'modal-backdrop modal-closing'}>
-      <div className={open && !isClosing ? 'modal-card modal-card-open' : 'modal-card modal-card-closing'}>
+    <div
+      className={open && !isClosing ? 'modal-backdrop modal-open' : 'modal-backdrop modal-closing'}
+      onClick={requestClose}
+    >
+      <div
+        className={open && !isClosing ? 'modal-card modal-card-open' : 'modal-card modal-card-closing'}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>{meeting.id ? '编辑会议' : '新建会议'}</h2>
-          <button className="icon-button" onClick={onClose}>
+          <button className="icon-button" onClick={requestClose} aria-label="关闭">
             <X size={18} />
           </button>
         </div>
@@ -391,10 +427,18 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
           ) : null}
         </div>
         <div className="panel-actions">
-          <button className="ghost-button" onClick={onClose}>
+          {!formData.name?.trim() ? (
+            <span className="edit-modal-validation-hint">请填写会议名称后保存</span>
+          ) : null}
+          <button className="ghost-button" onClick={requestClose}>
             取消
           </button>
-          <button className="primary-button" onClick={() => onSave(formData)}>
+          <button
+            className="primary-button"
+            onClick={() => onSave(formData)}
+            disabled={!formData.name?.trim()}
+            title={!formData.name?.trim() ? '请先填写会议名称' : '保存会议'}
+          >
             保存
           </button>
         </div>

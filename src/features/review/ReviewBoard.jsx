@@ -1,5 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Filter, List, Lock, Pin, Plus, Search, Trash2, X } from 'lucide-react'
+import { confirmDialog, toast } from '../../components/Feedback'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Filter,
+  List,
+  Lock,
+  MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pin,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
 import { FREQUENCY_COLORS, FREQUENCY_LABELS } from '../../data/meetingData'
 import {
   buildTimeSlots,
@@ -311,13 +330,50 @@ export function ReviewBoard({
   const [checkLocateCycleMap, setCheckLocateCycleMap] = useState({})
   const [checkFocus, setCheckFocus] = useState(null)
   const [pendingScrollTarget, setPendingScrollTarget] = useState(null)
+  const [checklistCollapsed, setChecklistCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem('meeting-manager:ui:review-checklist-collapsed:v1') === '1',
+  )
+  const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false)
   const [selectedChecklistDetailId, setSelectedChecklistDetailId] = useState('')
   const [restoreDraft, setRestoreDraft] = useState(null)
   const [draggingMeeting, setDraggingMeeting] = useState(null)
   const [dragTarget, setDragTarget] = useState(null)
+  const weekCalendarRef = useRef(null)
+  const monthBoardRef = useRef(null)
+  const toolbarMenuRef = useRef(null)
   const dragTargetRef = useRef(null)
   const pointerSessionRef = useRef(null)
   const rowRefs = useRef(new Map())
+
+  useEffect(() => {
+    window.localStorage.setItem('meeting-manager:ui:review-checklist-collapsed:v1', checklistCollapsed ? '1' : '0')
+  }, [checklistCollapsed])
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!toolbarMenuRef.current?.contains(event.target)) {
+        setToolbarMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    return () => window.removeEventListener('pointerdown', handlePointerDown)
+  }, [])
+
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key !== 'Escape') return
+      // 按层级关闭最上层弹窗
+      if (restoreDraft) setRestoreDraft(null)
+      else if (selectedChecklistDetailId) setSelectedChecklistDetailId('')
+      else if (selectedMeeting) setSelectedMeeting(null)
+      else if (selectedDay) setSelectedDay(null)
+      else if (showAddModal) setShowAddModal(false)
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [restoreDraft, selectedChecklistDetailId, selectedMeeting, selectedDay, showAddModal])
 
   const conflictIdSet = useMemo(() => new Set(conflicts.flatMap((item) => item.meetingIds)), [conflicts])
   const calendarHourRange = useMemo(
@@ -500,26 +556,54 @@ export function ReviewBoard({
     if (!pendingScrollTarget) return undefined
 
     const frameId = window.requestAnimationFrame(() => {
-      const selector =
-        pendingScrollTarget.kind === 'card'
-          ? `[data-review-meeting-id="${pendingScrollTarget.meetingId}"]`
-          : `[data-review-day-head="${pendingScrollTarget.date}"]`
-      const target = document.querySelector(selector)
-      if (!target) return
+      // 只滚动日历容器内部，绝不触发整页滚动：
+      // - card：把目标会议卡在容器内垂直居中
+      // - issue/day：目标列本就可见（周视图 7 列全显示），高亮标记足够，不做滚动
+      if (pendingScrollTarget.kind !== 'card') {
+        setPendingScrollTarget(null)
+        return
+      }
 
-      const topOffset =
-        pendingScrollTarget.kind === 'card'
-          ? 124
-          : pendingScrollTarget.kind === 'issue'
-            ? 96
-            : 88
-      const nextTop = Math.max(window.scrollY + target.getBoundingClientRect().top - topOffset, 0)
-      window.scrollTo({ top: nextTop, behavior: 'smooth' })
+      const container =
+        viewType === 'calendar' ? weekCalendarRef.current : viewType === 'month' ? monthBoardRef.current : null
+      const target = document.querySelector(`[data-review-meeting-id="${pendingScrollTarget.meetingId}"]`)
+      if (!target) {
+        setPendingScrollTarget(null)
+        return
+      }
+
+      if (container && container.contains(target)) {
+        const containerRect = container.getBoundingClientRect()
+        const targetRect = target.getBoundingClientRect()
+        const delta = targetRect.top + targetRect.height / 2 - (containerRect.top + containerRect.height / 2)
+        container.scrollTo({ top: Math.max(0, container.scrollTop + delta), behavior: 'smooth' })
+      }
       setPendingScrollTarget(null)
     })
 
     return () => window.cancelAnimationFrame(frameId)
   }, [monthAnchor, pendingScrollTarget, viewType, weekAnchor])
+
+  const earliestMeetingStart = useMemo(() => {
+    const earliest = scheduledMeetings.reduce(
+      (min, meeting) => (meeting.startTime && meeting.startTime < min ? meeting.startTime : min),
+      '99:99',
+    )
+    return earliest === '99:99' ? '' : earliest
+  }, [scheduledMeetings])
+
+  useEffect(() => {
+    const container =
+      viewType === 'calendar' ? weekCalendarRef.current : viewType === 'month' ? monthBoardRef.current : null
+    if (!container || !earliestMeetingStart) return
+
+    const blockHeight = viewType === 'calendar' ? WEEK_BLOCK_HEIGHT : MONTH_BLOCK_HEIGHT
+    const minutesFromTop = timeToMinutes(earliestMeetingStart) - startHour * 60
+    if (minutesFromTop <= 0) return
+
+    container.scrollTop = Math.max(0, (minutesFromTop / 15) * blockHeight - blockHeight * 3)
+    // 视图或周/月切换后，自动定位到当天最早会议时段，减少手动滚动
+  }, [viewType, weekAnchor, monthAnchor, earliestMeetingStart, startHour, WEEK_BLOCK_HEIGHT, MONTH_BLOCK_HEIGHT])
 
   const weekRangeLabel = `${weekDays[0]?.date ?? ''} 至 ${weekDays[weekDays.length - 1]?.date ?? ''}`
   const statItems = [
@@ -544,35 +628,76 @@ export function ReviewBoard({
     </div>
   )
 
-  const planActions = (
-    <div className="review-batch-group">
-      <button className="ghost-button" onClick={onImportPlan}>
-        导入排程方案
+  const toolbarMoreMenu = (
+    <div className="mv-more" ref={toolbarMenuRef}>
+      <button
+        className={toolbarMenuOpen ? 'ghost-button mv-more-open' : 'ghost-button'}
+        onClick={() => setToolbarMenuOpen((current) => !current)}
+        type="button"
+        aria-label="更多批量操作"
+        title="更多批量操作"
+      >
+        <MoreHorizontal size={16} />
       </button>
-      <button className="ghost-button" onClick={onExportPlan}>
-        导出排程方案
-      </button>
-    </div>
-  )
-
-  const batchActions = (
-    <div className="review-batch-group">
-      <button className="ghost-button" onClick={allReserved ? onUnreserveAll : onReserveAll}>
-        <Pin size={16} />
-        {allReserved ? '取消预留' : '全部预留'}
-      </button>
-      <button className="ghost-button" onClick={allLocked ? onUnlockAll : onLockAll}>
-        <Lock size={16} />
-        {allLocked ? '取消锁定' : '全部锁定'}
-      </button>
-      <button className="ghost-button" onClick={openLinkedAddModal}>
-        <Plus size={16} />
-        从会议列表补进
-      </button>
-      <button className="primary-button" onClick={openAdhocAddModal}>
-        <Plus size={16} />
-        新增临时日程
-      </button>
+      {toolbarMenuOpen ? (
+        <div className="nx-card mv-more-popover review-more-popover">
+          <button
+            className="mv-more-item"
+            type="button"
+            onClick={() => {
+              setToolbarMenuOpen(false)
+              ;(allReserved ? onUnreserveAll : onReserveAll)()
+            }}
+          >
+            <Pin size={15} />
+            {allReserved ? '取消全部预留' : '全部预留'}
+          </button>
+          <button
+            className="mv-more-item"
+            type="button"
+            onClick={() => {
+              setToolbarMenuOpen(false)
+              ;(allLocked ? onUnlockAll : onLockAll)()
+            }}
+          >
+            <Lock size={15} />
+            {allLocked ? '取消全部锁定' : '全部锁定'}
+          </button>
+          <button
+            className="mv-more-item"
+            type="button"
+            onClick={() => {
+              setToolbarMenuOpen(false)
+              openLinkedAddModal()
+            }}
+          >
+            <Plus size={15} />
+            从会议列表补进
+          </button>
+          <button
+            className="mv-more-item"
+            type="button"
+            onClick={() => {
+              setToolbarMenuOpen(false)
+              onImportPlan()
+            }}
+          >
+            <Upload size={15} />
+            导入排程方案
+          </button>
+          <button
+            className="mv-more-item"
+            type="button"
+            onClick={() => {
+              setToolbarMenuOpen(false)
+              onExportPlan()
+            }}
+          >
+            <Download size={15} />
+            导出排程方案
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 
@@ -590,19 +715,27 @@ export function ReviewBoard({
 
   const weekNavigation = (
     <div className="month-nav review-inline-nav">
-      <button className="icon-button" onClick={() => setWeekAnchor(shiftDate(weekAnchor, -7))}>
+      <button className="icon-button" onClick={() => setWeekAnchor(shiftDate(weekAnchor, -7))} aria-label="上一周">
         <ChevronLeft size={16} />
       </button>
       <strong>{weekRangeLabel}</strong>
-      <button className="icon-button" onClick={() => setWeekAnchor(shiftDate(weekAnchor, 7))}>
+      <button className="icon-button" onClick={() => setWeekAnchor(shiftDate(weekAnchor, 7))} aria-label="下一周">
         <ChevronRight size={16} />
+      </button>
+      <button
+        className="ghost-button review-nav-today"
+        type="button"
+        onClick={() => setWeekAnchor(firstDate)}
+        title="回到方案中最早会议所在周"
+      >
+        回首周
       </button>
     </div>
   )
 
   function renderReviewToolbar(navigation = null) {
     return (
-      <div className="review-toolbar">
+      <div className="review-toolbar review-toolbar-slim">
         <div className="review-toolbar-row review-toolbar-row-top">
           <div className="review-toolbar-main">
             {viewTabs}
@@ -616,10 +749,13 @@ export function ReviewBoard({
               </div>
             ))}
           </div>
-        </div>
-        <div className="review-toolbar-row review-toolbar-row-bottom">
-          {planActions}
-          {batchActions}
+          <div className="review-toolbar-actions">
+            {toolbarMoreMenu}
+            <button className="primary-button" onClick={openAdhocAddModal}>
+              <Plus size={16} />
+              新增临时日程
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -826,17 +962,21 @@ export function ReviewBoard({
     )
   }
 
-  function submitManualMeeting() {
+  async function submitManualMeeting() {
     if (!newMeeting.name.trim()) {
-      window.alert('请输入会议名称')
+      toast('请输入会议名称', 'warning')
       return
     }
     if (newMeeting.endTime <= newMeeting.startTime) {
-      window.alert('结束时间必须晚于开始时间')
+      toast('结束时间必须晚于开始时间', 'warning')
       return
     }
     if (hasDetailConflict('', newMeeting.date, newMeeting.startTime, newMeeting.endTime)) {
-      const proceed = window.confirm('检测到时间冲突，是否仍然新增？')
+      const proceed = await confirmDialog({
+        title: '时间冲突',
+        message: '该时段已有其他会议，是否仍然新增？',
+        confirmLabel: '仍然新增',
+      })
       if (!proceed) return
     }
 
@@ -892,14 +1032,19 @@ export function ReviewBoard({
       if (viewType !== 'calendar') {
         setViewType('calendar')
       }
-      setPendingScrollTarget({
-        kind: focus.kind === 'shifted' || focus.kind === 'missing' ? 'issue' : 'day',
-        date: anchorDate,
-      })
+      setPendingScrollTarget(
+        focus.actualInstanceId
+          ? { kind: 'card', meetingId: focus.actualInstanceId }
+          : {
+              kind: focus.kind === 'shifted' || focus.kind === 'missing' ? 'issue' : 'day',
+              date: anchorDate,
+            },
+      )
     }
     const element = rowRefs.current.get(row.id)
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // 仅在清单自身滚动容器内微调，避免联动整页滚动
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }
 
@@ -998,20 +1143,24 @@ export function ReviewBoard({
     closeRestoreModal()
   }
 
-  function submitLinkedMeeting() {
+  async function submitLinkedMeeting() {
     const sourceMeeting = sourceMeetingsById.get(linkedDraft.meetingId)
     if (!sourceMeeting) {
-      window.alert('请选择一个会议列表中的会议')
+      toast('请选择一个会议列表中的会议', 'warning')
       return
     }
     if (!linkedDraft.date || !linkedDraft.startTime) {
-      window.alert('请选择日期和开始时间')
+      toast('请选择日期和开始时间', 'warning')
       return
     }
 
     const endTime = minutesToTime(timeToMinutes(linkedDraft.startTime) + sourceMeeting.duration)
     if (hasDetailConflict('', linkedDraft.date, linkedDraft.startTime, endTime)) {
-      const proceed = window.confirm('检测到时间冲突，是否仍然补进审核方案？')
+      const proceed = await confirmDialog({
+        title: '时间冲突',
+        message: '该时段已有其他会议，是否仍然补进审核方案？',
+        confirmLabel: '仍然补进',
+      })
       if (!proceed) return
     }
 
@@ -1042,6 +1191,26 @@ export function ReviewBoard({
   }
 
   function renderChecklistPanel() {
+    if (checklistCollapsed) {
+      return (
+        <aside className="panel review-checklist-panel review-checklist-rail">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setChecklistCollapsed(false)}
+            aria-label="展开检查清单"
+            title="展开检查清单"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+          <span className="review-checklist-rail-label">检查清单</span>
+          <span className="review-checklist-rail-count">
+            {checklistCheckedCount}/{checklistRows.length}
+          </span>
+        </aside>
+      )
+    }
+
     return (
       <aside className="panel review-checklist-panel">
         <div className="review-checklist-topbar">
@@ -1049,9 +1218,20 @@ export function ReviewBoard({
             <CheckCircle2 size={16} />
             <strong>检查清单</strong>
           </div>
-          <span className="review-checklist-progress">
-            {checklistCheckedCount} / {checklistRows.length}
-          </span>
+          <div className="review-checklist-topbar-side">
+            <span className="review-checklist-progress">
+              {checklistCheckedCount} / {checklistRows.length}
+            </span>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => setChecklistCollapsed(true)}
+              aria-label="收起检查清单"
+              title="收起检查清单"
+            >
+              <PanelLeftClose size={15} />
+            </button>
+          </div>
         </div>
         <label className="review-checklist-search">
           <Search size={15} />
@@ -1175,11 +1355,11 @@ export function ReviewBoard({
 
   if (viewType === 'month') {
     return (
-      <div className="review-layout review-layout-integrated">
+      <div className={checklistCollapsed ? 'review-layout review-layout-integrated review-layout-collapsed' : 'review-layout review-layout-integrated'}>
         {renderChecklistPanel()}
         <section className="panel">
           {renderReviewToolbar(monthNavigation)}
-          <div className="review-month-board">
+          <div className="review-month-board" ref={monthBoardRef}>
             {monthWeeks.map((week, weekIndex) => (
               <div key={`month-week-${weekIndex}`} className="review-month-week">
                 <div
@@ -1288,7 +1468,7 @@ export function ReviewBoard({
 
   if (viewType === 'calendar') {
     return (
-      <div className="review-layout review-layout-integrated">
+      <div className={checklistCollapsed ? 'review-layout review-layout-integrated review-layout-collapsed' : 'review-layout review-layout-integrated'}>
         {renderChecklistPanel()}
         <section className="panel">
           {renderReviewToolbar(weekNavigation)}
@@ -1305,7 +1485,7 @@ export function ReviewBoard({
               </div>
             </div>
           ) : (
-            <div className="review-calendar">
+            <div className="review-calendar" ref={weekCalendarRef}>
               <div className="time-column" style={{ gridTemplateRows: `44px repeat(${timeSlots.length}, ${WEEK_BLOCK_HEIGHT}px)` }}>
                 <div className="time-head" />
                 {timeSlots.map((slot) => (
@@ -1400,7 +1580,7 @@ export function ReviewBoard({
   }
 
   return (
-    <div className="review-layout review-layout-integrated">
+    <div className={checklistCollapsed ? 'review-layout review-layout-integrated review-layout-collapsed' : 'review-layout review-layout-integrated'}>
       {renderChecklistPanel()}
       <section className="panel review-list-panel">
         {renderReviewToolbar()}
@@ -1626,13 +1806,17 @@ export function ReviewBoard({
             </button>
             <button
               className="ghost-button"
-              onClick={() => {
+              onClick={async () => {
                 if (editEnd <= editStart) {
-                  window.alert('结束时间必须晚于开始时间')
+                  toast('结束时间必须晚于开始时间', 'warning')
                   return
                 }
                 if (hasDetailConflict(selectedMeeting.id, editDate, editStart, editEnd)) {
-                  const proceed = window.confirm('检测到当天存在时间冲突，是否仍然保存？')
+                  const proceed = await confirmDialog({
+                    title: '时间冲突',
+                    message: '当天该时段已有其他会议，是否仍然保存？',
+                    confirmLabel: '仍然保存',
+                  })
                   if (!proceed) return
                 }
                 onMoveMeeting(selectedMeeting.id, editDate, editStart, editEnd)
@@ -1712,15 +1896,19 @@ export function ReviewBoard({
                       />
                       <button
                         className="ghost-button"
-                        onClick={() => {
+                        onClick={async () => {
                           const nextStart = detailEdits[item.id]?.startTime ?? item.startTime
                           const nextEnd = detailEdits[item.id]?.endTime ?? item.endTime
                           if (nextEnd <= nextStart) {
-                            window.alert('结束时间必须晚于开始时间')
+                            toast('结束时间必须晚于开始时间', 'warning')
                             return
                           }
                           if (hasDetailConflict(item.id, selectedDay.date, nextStart, nextEnd)) {
-                            const proceed = window.confirm('检测到当天存在时间冲突，是否仍然保存？')
+                            const proceed = await confirmDialog({
+                              title: '时间冲突',
+                              message: '当天该时段已有其他会议，是否仍然保存？',
+                              confirmLabel: '仍然保存',
+                            })
                             if (!proceed) return
                           }
                           onMoveMeeting(item.id, selectedDay.date, nextStart, nextEnd)

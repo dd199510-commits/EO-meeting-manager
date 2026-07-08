@@ -40,24 +40,27 @@ function HomeMetric({ icon, label, value, hint, tone = 'default' }) {
   const MetricIcon = icon
 
   return (
-    <div className={`home-metric home-metric-${tone}`}>
-      <MetricIcon size={18} />
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <em>{hint}</em>
+    <div className={`nx-card nx-card-hover hv-metric hv-metric-${tone}`}>
+      <MetricIcon aria-hidden="true" />
+      <div className="hv-metric-copy">
+        <span>{label}</span>
+        <strong>{value}</strong>
+        <em>{hint}</em>
+      </div>
     </div>
   )
 }
 
 function HomeListItem({ label, value, tone = 'default', actionLabel, onClick }) {
   return (
-    <div className={`home-list-item home-list-item-${tone}`}>
-      <div>
+    <div className="nx-row">
+      <span className={`nx-dot nx-dot-${tone}`} aria-hidden="true" />
+      <div className="nx-row-main">
         <strong>{label}</strong>
         <span>{value}</span>
       </div>
       {onClick ? (
-        <button className="ghost-button home-inline-action" onClick={onClick} type="button">
+        <button className="nx-btn nx-btn-quiet" onClick={onClick} type="button">
           {actionLabel}
         </button>
       ) : null}
@@ -78,6 +81,7 @@ export function HomeView({
   onGoToReserveNotice,
   onGoToOutlookInvite,
   onGoToContacts,
+  onGoToLogs,
 }) {
   const incompleteMeetings = meetings.filter(isMeetingIncomplete)
   const missingEmailMeetings = meetings.filter(hasMissingMeetingEmail)
@@ -90,8 +94,6 @@ export function HomeView({
   )
   const recentLogs = logs.slice(0, 4)
   const riskCount = reviewConflicts.length + incompleteMeetings.length + missingEmailMeetings.length + contactsMissingEmail.length
-  const healthLabel = riskCount > 0 ? '需要关注' : meetings.length > 0 ? '运行正常' : '待初始化'
-  const healthDetail = riskCount > 0 ? `${riskCount} 个事项待处理` : meetings.length > 0 ? '会议资产状态稳定' : '请先导入或新建会议'
   const todayLabel = new Date().toLocaleDateString('zh-CN', {
     month: 'long',
     day: 'numeric',
@@ -105,7 +107,7 @@ export function HomeView({
           value: '当前还没有会议资料',
           actionLabel: '新建',
           onClick: onCreateMeeting,
-          tone: 'attention',
+          tone: 'info',
         }
       : null,
     incompleteMeetings.length > 0
@@ -114,7 +116,7 @@ export function HomeView({
           value: `${incompleteMeetings.length} 个会议缺少名称、时长或参会人`,
           actionLabel: '处理',
           onClick: onGoToMeetings,
-          tone: 'warning',
+          tone: 'warn',
         }
       : null,
     planningTasks.length === 0
@@ -123,7 +125,7 @@ export function HomeView({
           value: '还没有排程任务',
           actionLabel: '排程',
           onClick: onGoToPlanner,
-          tone: 'attention',
+          tone: 'info',
         }
       : null,
     pendingPlanningTasks.length > 0
@@ -162,7 +164,7 @@ export function HomeView({
           value: `${missingEmailMeetings.length} 个会议存在未关联或缺邮箱人员`,
           actionLabel: '会议库',
           onClick: onGoToMeetings,
-          tone: 'warning',
+          tone: 'warn',
         }
       : null,
     contactsMissingEmail.length > 0
@@ -171,7 +173,7 @@ export function HomeView({
           value: `${contactsMissingEmail.length} 位联系人未填写邮箱`,
           actionLabel: '通讯录',
           onClick: onGoToContacts,
-          tone: 'warning',
+          tone: 'warn',
         }
       : null,
     incompleteMeetings.length > 0
@@ -180,60 +182,63 @@ export function HomeView({
           value: `${incompleteMeetings.length} 个会议待补齐基础字段`,
           actionLabel: '补齐',
           onClick: onGoToMeetings,
-          tone: 'attention',
+          tone: 'info',
         }
       : null,
   ].filter(Boolean)
 
   return (
-    <section className="home-workspace" aria-label="会议运营首页">
-      <section className="home-command-center" aria-label="首页总览">
-        <div className="home-command-main">
-          <div className="home-command-date">总裁办 · {todayLabel}</div>
+    <section className="hv-workspace" aria-label="会议运营首页">
+      <section className="hv-hero" aria-label="首页总览">
+        <div className="hv-hero-main">
+          <span className="hv-hero-eyebrow">总裁办 · {todayLabel}</span>
           <h2>总裁办会议管理系统</h2>
-          <p>统一汇总总裁办会议资产、排程进度、通知预留与会邀生成，帮助会议运营按日推进、风险可见、记录可追踪。</p>
-          <div className="home-command-actions">
-            <button className="primary-button" onClick={onCreateMeeting} type="button">
-              <Plus size={16} />
+          <p className="hv-hero-desc">
+            统一汇总会议资产、排程进度、通知预留与会邀生成，按日推进、风险可见、记录可追踪。
+          </p>
+          <div className="hv-hero-actions">
+            <button className="nx-btn nx-btn-primary" onClick={onCreateMeeting} type="button">
+              <Plus />
               新建会议
             </button>
-            <button className="ghost-button" onClick={onGoToPlanner} type="button">
-              <Sparkles size={16} />
+            <button className="nx-btn nx-btn-outline" onClick={onGoToPlanner} type="button">
+              <Sparkles />
               生成排程
             </button>
-            <button className="home-command-action-muted" onClick={onGoToReserveNotice} type="button">
-              <Megaphone size={15} />
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToReserveNotice} type="button">
+              <Megaphone />
               预留通知
             </button>
-            <button className="home-command-action-muted" onClick={onGoToOutlookInvite} type="button">
-              <Mail size={15} />
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToOutlookInvite} type="button">
+              <Mail />
               会邀生成
             </button>
-            <button className="home-command-action-muted" onClick={onGoToContacts} type="button">
-              <Users size={15} />
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToContacts} type="button">
+              <Users />
               通讯录
             </button>
           </div>
-          <div className="home-office-logo" aria-label="总办 EO 标识">
-            <img src={homeLogoSrc} alt="" aria-hidden="true" />
-          </div>
         </div>
 
-        <aside className="home-command-status" aria-label="首页状态">
-          <div className="home-command-status-head">
+        <div className="hv-hero-logo" aria-hidden="true">
+          <img src={homeLogoSrc} alt="" />
+        </div>
+
+        <aside className="hv-status" aria-label="运营总览">
+          <div className="hv-status-head">
             <strong>运营总览</strong>
-            <em>V3.5</em>
+            <em>V4.0</em>
           </div>
-          <div className="home-status-summary" aria-label="运营总览摘要">
-            <div className="home-status-summary-meetings">
+          <div className="hv-status-grid">
+            <div className="hv-status-cell hv-status-cell-accent">
               <span>会议条目</span>
               <strong>{meetings.length}</strong>
             </div>
-            <div className="home-status-summary-todo">
+            <div className="hv-status-cell hv-status-cell-warn">
               <span>待处理事项</span>
               <strong>{todoItems.length}</strong>
             </div>
-            <div className="home-status-summary-risk">
+            <div className={riskCount > 0 ? 'hv-status-cell hv-status-cell-danger' : 'hv-status-cell'}>
               <span>风险提醒</span>
               <strong>{riskCount}</strong>
             </div>
@@ -241,75 +246,82 @@ export function HomeView({
         </aside>
       </section>
 
-      <section className="home-signal-strip" aria-label="运营总览">
-        <HomeMetric icon={Database} label="会议库" value={meetings.length} hint="有效会议" tone="blue" />
-        <HomeMetric icon={CalendarClock} label="排程任务" value={planningTasks.length} hint={`${pendingPlanningTasks.length} 个待推进`} tone="amber" />
-        <HomeMetric icon={CalendarCheck} label="已排程" value={scheduledMeetingCount} hint={`${scheduledTasks.length} 个任务`} tone="green" />
-        <HomeMetric icon={AlertTriangle} label="风险提醒" value={riskCount} hint={`${reviewConflicts.length} 个冲突`} tone={riskCount > 0 ? 'red' : 'gray'} />
+      <section className="hv-metrics" aria-label="运营指标">
+        <HomeMetric icon={Database} label="会议库" value={meetings.length} hint="有效会议" tone="accent" />
+        <HomeMetric icon={CalendarClock} label="排程任务" value={planningTasks.length} hint={`${pendingPlanningTasks.length} 个待推进`} />
+        <HomeMetric icon={CalendarCheck} label="已排程" value={scheduledMeetingCount} hint={`${scheduledTasks.length} 个任务`} />
+        <HomeMetric
+          icon={AlertTriangle}
+          label="风险提醒"
+          value={riskCount}
+          hint={`${reviewConflicts.length} 个冲突`}
+          tone={riskCount > 0 ? 'danger' : 'default'}
+        />
       </section>
 
-      <div className="home-main-grid">
-        <section className="home-section home-section-focus">
-          <div className="home-section-head">
-            <span className="home-section-title">
-              <CheckSquare2 size={15} />
+      <div className="hv-grid">
+        <section className="nx-card hv-panel">
+          <div className="nx-section-head">
+            <span className="nx-section-title">
+              <CheckSquare2 aria-hidden="true" />
               待办事项
             </span>
-            <strong>{todoItems.length || '清爽'}</strong>
+            <span className="nx-section-count">{todoItems.length > 0 ? `${todoItems.length} 项` : '清爽'}</span>
           </div>
-          <div className="home-list">
+          <div className="nx-rows">
             {todoItems.length > 0 ? (
               todoItems.map((item) => <HomeListItem key={item.label} {...item} />)
             ) : (
-              <div className="home-empty-line">暂无待办事项。</div>
+              <div className="nx-empty">暂无待办事项。</div>
             )}
           </div>
         </section>
 
-        <section className="home-section home-section-risk">
-          <div className="home-section-head">
-            <span className="home-section-title">
-              <Radar size={15} />
+        <section className="nx-card hv-panel">
+          <div className="nx-section-head">
+            <span className="nx-section-title">
+              <Radar aria-hidden="true" style={{ color: riskItems.length > 0 ? '#b91c1c' : undefined }} />
               风险提醒
             </span>
-            <strong>{riskItems.length || '正常'}</strong>
+            <span className="nx-section-count">{riskItems.length > 0 ? `${riskItems.length} 项` : '正常'}</span>
           </div>
-          <div className="home-list">
+          <div className="nx-rows">
             {riskItems.length > 0 ? (
               riskItems.map((item) => <HomeListItem key={item.label} {...item} />)
             ) : (
-              <div className="home-empty-line">当前没有明显风险。</div>
+              <div className="nx-empty">当前没有明显风险。</div>
             )}
           </div>
         </section>
 
-        <section className="home-section home-section-log">
-          <div className="home-section-head">
-            <span className="home-section-title">
-              <FileText size={15} />
+        <section className="nx-card hv-panel">
+          <div className="nx-section-head">
+            <span className="nx-section-title">
+              <FileText aria-hidden="true" style={{ color: '#475569' }} />
               最近操作
             </span>
-            <button className="ghost-button home-inline-action" onClick={onGoToMeetings} type="button">
-              记录
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToLogs} type="button">
+              全部记录
             </button>
           </div>
-          <div className="home-log-list">
+          <div className="nx-rows">
             {recentLogs.length > 0 ? (
               recentLogs.map((log) => (
-                <div className="home-log-item" key={log.id}>
-                  <FileText size={15} />
-                  <strong>{log.targetName || log.target || '系统操作'}</strong>
-                  <span>{log.detail || log.actionType || '已记录'}</span>
-                  <em>{formatLogTime(log.timestamp ?? log.createdAt)}</em>
+                <div className="nx-row" key={log.id}>
+                  <span className="nx-dot" aria-hidden="true" />
+                  <div className="nx-row-main">
+                    <strong>{log.targetName || log.target || '系统操作'}</strong>
+                    <span>{log.detail || log.actionType || '已记录'}</span>
+                  </div>
+                  <span className="hv-log-time">{formatLogTime(log.timestamp ?? log.createdAt)}</span>
                 </div>
               ))
             ) : (
-              <div className="home-empty-line">暂无操作记录。</div>
+              <div className="nx-empty">暂无操作记录。</div>
             )}
           </div>
         </section>
       </div>
-
     </section>
   )
 }

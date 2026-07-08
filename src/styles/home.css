@@ -1,0 +1,325 @@
+/* =============================================
+   首页（V5 重建，hv-* 类）
+   ============================================= */
+
+.app-frame-home .app-page-header {
+  display: none;
+}
+
+.app-frame-home .app-main {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-frame-home .app-page-content {
+  min-height: 0;
+  padding: 20px 28px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f6f9fc 0%, #eef2f6 100%);
+}
+
+.hv-workspace {
+  display: grid;
+  grid-template-rows: minmax(240px, 0.9fr) auto minmax(0, 1fr);
+  gap: 12px;
+  height: calc(100vh - 40px);
+  min-height: 0;
+}
+
+/* ---- Hero ---- */
+.hv-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  padding: 26px 28px;
+  border: 1px solid var(--nx-dark-line);
+  border-radius: var(--nx-r-lg);
+  background: linear-gradient(150deg, var(--nx-dark) 0%, var(--nx-dark-2) 100%);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+.hv-hero-main {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  padding: 10px 0 0 6px;
+}
+
+.hv-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 12px;
+  border: 1px solid rgba(45, 212, 191, 0.25);
+  border-radius: var(--nx-r-full);
+  color: #5eead4;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hv-hero h2 {
+  margin: 0;
+  max-width: 620px;
+  color: #ffffff;
+  font-size: var(--nx-fs-display);
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hv-hero-desc {
+  margin: 0;
+  max-width: 520px;
+  color: var(--nx-dark-text-dim);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.hv-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.hv-hero-actions .nx-btn-primary {
+  background: #14b8a6;
+  border-color: #14b8a6;
+  color: #042f2a;
+}
+
+.hv-hero-actions .nx-btn-primary:hover:not(:disabled) {
+  background: var(--nx-dark-accent);
+  border-color: var(--nx-dark-accent);
+}
+
+.hv-hero-actions .nx-btn-outline {
+  background: transparent;
+  border-color: rgba(204, 251, 241, 0.24);
+  color: rgba(230, 255, 251, 0.92);
+}
+
+.hv-hero-actions .nx-btn-outline:hover:not(:disabled) {
+  border-color: rgba(153, 246, 228, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.hv-hero-actions .nx-btn-quiet {
+  color: rgba(226, 244, 244, 0.6);
+}
+
+.hv-hero-actions .nx-btn-quiet:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(240, 253, 250, 0.95);
+}
+
+.hv-hero-logo {
+  position: absolute;
+  right: 36px;
+  top: 56%;
+  z-index: 0;
+  width: 300px;
+  height: 190px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.hv-hero-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: saturate(0.85) drop-shadow(0 20px 34px rgba(20, 184, 166, 0.16));
+  mix-blend-mode: screen;
+}
+
+/* ---- Hero 右侧状态板 ---- */
+.hv-status {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  padding: 20px 22px;
+  border: 1px solid var(--nx-dark-line);
+  border-radius: var(--nx-r-md);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.hv-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hv-status-head strong {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hv-status-head em {
+  color: rgba(94, 234, 212, 0.7);
+  font-size: var(--nx-fs-caption);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.hv-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hv-status-cell {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  padding: 6px 0 6px 12px;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.hv-status-cell span {
+  color: var(--nx-dark-text-dim);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hv-status-cell strong {
+  color: #ffffff;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.hv-status-cell-accent { border-left-color: rgba(45, 212, 191, 0.6); }
+.hv-status-cell-warn { border-left-color: rgba(253, 186, 116, 0.55); }
+.hv-status-cell-warn strong { color: #fed7aa; }
+.hv-status-cell-danger { border-left-color: rgba(248, 113, 113, 0.55); }
+.hv-status-cell-danger strong { color: #fca5a5; }
+
+/* ---- 指标行 ---- */
+.hv-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+}
+
+.hv-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  padding: 12px 15px;
+}
+
+.hv-metric svg {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: var(--nx-r-sm);
+  background: #f1f5f9;
+  color: #475569;
+  flex: 0 0 auto;
+}
+
+.hv-metric-accent svg { background: var(--nx-accent-soft); color: var(--nx-accent-strong); }
+.hv-metric-danger svg { background: var(--nx-danger-soft); color: #b91c1c; }
+
+.hv-metric-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hv-metric-copy span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.hv-metric-copy strong {
+  color: var(--nx-ink);
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.hv-metric-danger .hv-metric-copy strong {
+  color: #b91c1c;
+}
+
+.hv-metric-copy em {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  font-style: normal;
+}
+
+/* ---- 三栏 ---- */
+.hv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.hv-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  padding: 14px 16px 12px;
+  overflow: hidden;
+}
+
+/* ---- 日志行 ---- */
+.hv-log-time {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  white-space: nowrap;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 1100px) {
+  .app-frame-home .app-main {
+    height: auto;
+    overflow: visible;
+  }
+
+  .hv-workspace {
+    height: auto;
+    grid-template-rows: none;
+  }
+
+  .hv-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hv-metrics,
+  .hv-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .hv-metrics,
+  .hv-grid {
+    grid-template-columns: 1fr;
+  }
+}

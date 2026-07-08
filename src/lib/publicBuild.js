@@ -1,6 +1,6 @@
 export const IS_PUBLIC_EMPTY_BUILD = import.meta.env.VITE_PUBLIC_EMPTY_DATA === 'true'
 
-const PUBLIC_EMPTY_MARKER_KEY = 'meeting-manager:public-data-reset:v3.5-private-blank'
+const PUBLIC_EMPTY_MARKER_KEY = 'meeting-manager:public-data-reset:v4.0-private-blank'
 
 const PUBLIC_DATA_KEYS = [
   'meeting-manager:optimized-demo:v1',
@@ -9,6 +9,10 @@ const PUBLIC_DATA_KEYS = [
   'meeting-manager:logs:v1',
   'meeting-manager:planning-tasks:v1',
   'meeting-manager:reserve-notice-scheme-status:v1',
+  'meeting-manager:time-analysis-records:v2',
+  'meeting-manager:time-analysis-filters:v1',
+  'meeting-manager:time-analysis-saved-views:v1',
+  'meeting-manager:time-analysis-tracked-groups:v4',
   'meeting-manager-browser-ai-jobs',
 ]
 

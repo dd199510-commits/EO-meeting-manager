@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { readStorage } from '../../lib/storage'
+
+const MENTION_MENU_MAX_HEIGHT = 264
+const MENTION_MENU_MIN_HEIGHT = 96
+const MENTION_MENU_VIEWPORT_GAP = 12
 
 function getMentionQuery(value, caret) {
   const textBeforeCaret = value.slice(0, caret)
@@ -117,9 +122,10 @@ function renderHighlightedNotes(text, noteMentions) {
 }
 
 export function MeetingNotesField({
-  value,
+  value = '',
   noteMentions = [],
   meetings = [],
+  currentMeetingId,
   rows = 3,
   placeholder = '输入备注信息，支持使用 @ 引用其他会议',
   onChange,
@@ -127,6 +133,7 @@ export function MeetingNotesField({
   const textareaRef = useRef(null)
   const closeTimerRef = useRef(null)
   const [menuState, setMenuState] = useState(null)
+  const [menuRect, setMenuRect] = useState(null)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
 
   const storedMeetings = useMemo(() => readStorage().meetings ?? [], [])
@@ -136,7 +143,13 @@ export function MeetingNotesField({
       const seen = new Set()
 
       return mergedMeetings.filter((meeting) => {
-        if (!meeting?.id || !meeting.name?.trim() || meeting.status === 'deleted' || seen.has(meeting.id)) {
+        if (
+          !meeting?.id ||
+          meeting.id === currentMeetingId ||
+          !meeting.name?.trim() ||
+          meeting.status === 'deleted' ||
+          seen.has(meeting.id)
+        ) {
           return false
         }
 
@@ -144,12 +157,12 @@ export function MeetingNotesField({
         return true
       })
     },
-    [meetings, storedMeetings],
+    [currentMeetingId, meetings, storedMeetings],
   )
   const suggestions = useMemo(() => {
     if (!menuState) return []
     const normalizedQuery = menuState.query.trim().toLowerCase()
-    const source = normalizedQuery
+    const source = normalizedQuery && !['会议', '會議'].includes(normalizedQuery)
       ? meetingOptions.filter((meeting) => meeting.name.toLowerCase().includes(normalizedQuery))
       : meetingOptions
     return source.slice(0, 6)
@@ -163,12 +176,71 @@ export function MeetingNotesField({
     setHighlightedIndex(0)
   }, [menuState?.query])
 
+  useEffect(() => {
+    if (!menuState) {
+      setMenuRect(null)
+      return undefined
+    }
+
+    function updateMenuRect() {
+      const element = textareaRef.current
+      if (!element) return
+
+      const rect = element.getBoundingClientRect()
+      const optionCount = Math.max(suggestions.length, 1)
+      const estimatedHeight = Math.min(
+        MENTION_MENU_MAX_HEIGHT,
+        Math.max(MENTION_MENU_MIN_HEIGHT, 36 + optionCount * 38),
+      )
+      const belowTop = rect.bottom + 6
+      const availableBelow = window.innerHeight - belowTop - MENTION_MENU_VIEWPORT_GAP
+      const availableAbove = rect.top - 6 - MENTION_MENU_VIEWPORT_GAP
+      const openUpward = availableBelow < estimatedHeight && availableAbove > availableBelow
+      const maxHeight = Math.max(
+        MENTION_MENU_MIN_HEIGHT,
+        Math.min(estimatedHeight, openUpward ? availableAbove : availableBelow),
+      )
+      const top = openUpward
+        ? Math.max(MENTION_MENU_VIEWPORT_GAP, rect.top - 6 - maxHeight)
+        : Math.min(belowTop, window.innerHeight - MENTION_MENU_VIEWPORT_GAP - maxHeight)
+      const width = Math.min(rect.width, window.innerWidth - MENTION_MENU_VIEWPORT_GAP * 2)
+      const left = Math.max(
+        MENTION_MENU_VIEWPORT_GAP,
+        Math.min(rect.left, window.innerWidth - width - MENTION_MENU_VIEWPORT_GAP),
+      )
+
+      setMenuRect({
+        left,
+        width,
+        top,
+        maxHeight,
+      })
+    }
+
+    updateMenuRect()
+    window.addEventListener('resize', updateMenuRect)
+    window.addEventListener('scroll', updateMenuRect, true)
+
+    return () => {
+      window.removeEventListener('resize', updateMenuRect)
+      window.removeEventListener('scroll', updateMenuRect, true)
+    }
+  }, [menuState, suggestions.length])
+
   useEffect(
     () => () => {
       if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current)
     },
     [],
   )
+
+  useEffect(() => {
+    const element = textareaRef.current
+    if (!element || document.activeElement !== element) return
+
+    const caret = element.selectionStart ?? String(value || '').length
+    setMenuState(getMentionQuery(value || '', caret))
+  }, [value])
 
   function emitChange(nextValue, nextMentions) {
     onChange({
@@ -177,7 +249,14 @@ export function MeetingNotesField({
     })
   }
 
+  function clearCloseTimer() {
+    if (!closeTimerRef.current) return
+    window.clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = null
+  }
+
   function updateMenu(target, nextValue = target.value) {
+    clearCloseTimer()
     const caret = target.selectionStart ?? nextValue.length
     setMenuState(getMentionQuery(nextValue, caret))
   }
@@ -273,11 +352,12 @@ export function MeetingNotesField({
       <textarea
         ref={textareaRef}
         rows={rows}
-        value={value}
+        value={value || ''}
         placeholder={placeholder}
         onChange={handleTextChange}
         onKeyDown={handleKeyDown}
         onClick={(event) => updateMenu(event.target)}
+        onSelect={(event) => updateMenu(event.target)}
         onKeyUp={(event) => updateMenu(event.target)}
         onBlur={() => {
           closeTimerRef.current = window.setTimeout(() => setMenuState(null), 120)
@@ -287,8 +367,20 @@ export function MeetingNotesField({
       <div className="notes-mention-footer">
         <div className="notes-mention-hint">输入 <strong>@</strong> 可快速引用其他会议</div>
       </div>
-      {menuState ? (
-        <div className="notes-mention-menu">
+      {menuState && menuRect ? createPortal(
+        <div
+          className="notes-mention-menu"
+          style={{
+            position: 'fixed',
+            left: menuRect.left,
+            width: menuRect.width,
+            right: 'auto',
+            top: menuRect.top,
+            maxHeight: menuRect.maxHeight,
+            overflowY: 'auto',
+            zIndex: 1200,
+          }}
+        >
           <div className="notes-mention-menu-title">
             {menuState.query ? `选择要引用的会议：${menuState.query}` : '选择要引用的会议'}
           </div>
@@ -322,7 +414,8 @@ export function MeetingNotesField({
           ) : (
             <div className="notes-mention-empty">没有匹配到可引用的会议</div>
           )}
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   )

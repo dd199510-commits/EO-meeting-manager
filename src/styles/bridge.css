@@ -1,0 +1,204 @@
+/* =============================================
+   过渡层：让尚未重建的重型模块（会议库/排程/审核/
+   通知/会邀/时间分析/弹窗）与新设计系统观感一致。
+   模块逐个重建后，本层对应规则可删除。
+   ============================================= */
+
+/* ---- 容器统一 ---- */
+.app-shell.app-frame .panel,
+.app-shell.app-frame .meeting-card,
+.app-shell.app-frame .meeting-group-block,
+.app-shell.app-frame .meeting-subgroup-shell,
+.app-shell.app-frame .planner-workbench-shell,
+.app-shell.app-frame .planner-results-shell,
+.app-shell.app-frame .final-check-shell,
+.app-shell.app-frame .reserve-notice-shell,
+.app-shell.app-frame .warning-panel,
+.app-shell.app-frame .review-hover-panel,
+.app-shell.app-frame .planner-step-card,
+.app-shell.app-frame .planner-task-home-list-panel {
+  border-radius: var(--nx-r-md);
+  border-color: var(--nx-line);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
+/* ---- 按钮统一 ---- */
+.app-shell.app-frame .primary-button,
+.app-shell.app-frame .ghost-button,
+.app-shell.app-frame .icon-button,
+.app-shell.app-frame .tab-button,
+.app-shell.app-frame .toolbar-menu-item {
+  border-radius: var(--nx-r-sm);
+  font-weight: 500;
+  transition:
+    background var(--nx-t-fast) var(--nx-ease),
+    border-color var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+  cursor: pointer;
+}
+
+.app-shell.app-frame .primary-button {
+  background: var(--nx-accent);
+  border-color: var(--nx-accent);
+  color: #ffffff;
+}
+
+.app-shell.app-frame .primary-button:hover:not(:disabled) {
+  background: var(--nx-accent-strong);
+  border-color: var(--nx-accent-strong);
+}
+
+.app-shell.app-frame .ghost-button {
+  border-color: var(--nx-line);
+  background: var(--nx-panel);
+  color: var(--nx-ink-2);
+}
+
+.app-shell.app-frame .ghost-button:hover:not(:disabled),
+.app-shell.app-frame .icon-button:hover:not(:disabled) {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.app-shell.app-frame .ghost-button.danger:hover:not(:disabled),
+.app-shell.app-frame .icon-button.danger:hover:not(:disabled),
+.app-shell.app-frame .danger-button:hover:not(:disabled) {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: var(--nx-danger-soft);
+  color: var(--nx-danger);
+}
+
+.app-shell.app-frame button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---- 输入统一 ---- */
+.app-shell.app-frame input,
+.app-shell.app-frame select,
+.app-shell.app-frame textarea {
+  border-radius: var(--nx-r-sm);
+}
+
+.app-shell.app-frame input:focus,
+.app-shell.app-frame select:focus,
+.app-shell.app-frame textarea:focus {
+  border-color: var(--nx-accent);
+  box-shadow: 0 0 0 3px rgba(15, 148, 142, 0.12);
+}
+
+/* ---- 表单校验提示 ---- */
+.edit-modal-validation-hint {
+  margin-right: auto;
+  align-self: center;
+  color: var(--nx-warn);
+  font-size: var(--nx-fs-caption);
+}
+
+/* ---- 弹窗统一 ---- */
+.app-shell.app-frame .modal-shell,
+.app-shell.app-frame .modal-panel,
+.app-shell.app-frame .edit-modal-panel {
+  border-radius: var(--nx-r-lg);
+  box-shadow: var(--nx-shadow-modal);
+}
+
+/* ---- 标题字重统一 ---- */
+.app-shell.app-frame strong,
+.app-shell.app-frame b {
+  font-weight: 600;
+}
+
+.app-shell.app-frame h1,
+.app-shell.app-frame h2,
+.app-shell.app-frame h3 {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ---- 时间分析模块 ---- */
+.time-analysis-workbench {
+  font-variant-numeric: tabular-nums;
+}
+
+.time-analysis-overview-group,
+.time-analysis-hero,
+.time-analysis-panel,
+.time-analysis-kpi {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.time-analysis-hero::before {
+  content: none;
+}
+
+.time-analysis-hero h2 {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.time-analysis-hero-copy span,
+.time-analysis-hero-main > span,
+.time-analysis-select span,
+.time-analysis-search span,
+.time-analysis-date-field span {
+  font-weight: 600;
+}
+
+.time-analysis-hero-copy span,
+.time-analysis-hero-main > span {
+  color: var(--nx-accent-strong);
+}
+
+.time-analysis-kpi {
+  border-left-width: 3px;
+  transition: box-shadow var(--nx-t-fast) var(--nx-ease);
+}
+
+.time-analysis-kpi:hover {
+  box-shadow: var(--nx-shadow-float);
+}
+
+.time-analysis-kpi span { font-weight: 500; }
+
+.time-analysis-kpi strong {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.time-analysis-kpi-blue { border-left-color: var(--nx-info); }
+.time-analysis-kpi-green { border-left-color: var(--nx-ok); }
+.time-analysis-kpi-orange { border-left-color: var(--nx-warn); }
+.time-analysis-kpi-purple { border-left-color: #6d28d9; }
+
+.time-analysis-panel-head strong { font-weight: 600; }
+.time-analysis-health-score span { font-weight: 600; }
+.time-analysis-health-dimension b { font-weight: 500; }
+.time-analysis-health-dimension em { font-weight: 600; }
+
+.time-analysis-health-dimension small,
+.time-analysis-kpi em,
+.time-analysis-slice-record em {
+  font-weight: 400;
+}
+
+.time-analysis-health-dimension,
+.time-analysis-health-score {
+  border-radius: var(--nx-r-sm);
+}
+
+.time-analysis-health-dimension {
+  transition:
+    border-color var(--nx-t-fast) var(--nx-ease),
+    background var(--nx-t-fast) var(--nx-ease);
+}
+
+.time-analysis-health-dimension:not(:disabled):hover {
+  border-color: var(--nx-accent-line);
+  background: #f7fdfc;
+}

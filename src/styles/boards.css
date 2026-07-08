@@ -1,0 +1,292 @@
+/* =============================================
+   预留通知 / 会邀生成 / 时间分析 —— 版式统一层
+   与 nx 设计体系对齐：容器、概览卡、选择器、
+   筛选芯片、列表项、预览面板、字重与数字排版
+   ============================================= */
+
+/* ---------- 通用容器 ---------- */
+.app-shell.app-frame .outlook-invite-shell,
+.app-shell.app-frame .reserve-notice-shell {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
+/* ---------- 概览统计卡（两模块共用）---------- */
+.app-shell.app-frame .reserve-notice-summary-card {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.app-shell.app-frame .reserve-notice-summary-card span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 500;
+}
+
+.app-shell.app-frame .reserve-notice-summary-card strong {
+  font-size: 21px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--nx-ink);
+}
+
+/* ---------- 任务选择器 ---------- */
+.app-shell.app-frame .reserve-task-selector {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel);
+}
+
+.app-shell.app-frame .reserve-task-selector select {
+  border-radius: var(--nx-r-sm);
+}
+
+/* ---------- 顶栏 ---------- */
+.app-shell.app-frame .outlook-invite-topbar {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel-soft);
+}
+
+/* ---------- 筛选芯片（final-check 系列被两模块复用）---------- */
+.app-shell.app-frame .final-check-filter,
+.app-shell.app-frame .outlook-invite-filter-group button {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel);
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 500;
+  transition:
+    border-color var(--nx-t-fast) var(--nx-ease),
+    background var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .final-check-filter:hover,
+.app-shell.app-frame .outlook-invite-filter-group button:hover {
+  border-color: var(--nx-accent-line);
+  color: var(--nx-accent-strong);
+}
+
+.app-shell.app-frame .final-check-filter-active,
+.app-shell.app-frame .final-check-filter.active,
+.app-shell.app-frame .outlook-invite-filter-group button.active {
+  border-color: var(--nx-accent);
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.app-shell.app-frame .final-check-search input {
+  border-radius: var(--nx-r-sm);
+}
+
+/* ---------- 列表项卡片 ---------- */
+.app-shell.app-frame .reserve-notice-arrangement-card,
+.app-shell.app-frame .reserve-notice-arrangement-item,
+.app-shell.app-frame .outlook-invite-item-main,
+.app-shell.app-frame .outlook-invite-preview-card {
+  border-color: var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  transition: border-color var(--nx-t-fast) var(--nx-ease), background var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .reserve-notice-arrangement-item:hover,
+.app-shell.app-frame .outlook-invite-item-main:hover {
+  border-color: var(--nx-accent-line);
+  background: #fbfefd;
+}
+
+.app-shell.app-frame .outlook-invite-preview-card-warning {
+  border-color: rgba(217, 119, 6, 0.3);
+  background: var(--nx-warn-soft);
+}
+
+/* ---------- 预留通知：左右分区强化 ---------- */
+.app-shell.app-frame .reserve-notice-layout {
+  gap: 16px;
+}
+
+.app-shell.app-frame .reserve-notice-list-panel {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel-soft);
+  box-shadow: none;
+  padding: 0 12px 12px;
+  overflow: hidden;
+}
+
+.app-shell.app-frame .reserve-notice-preview-panel {
+  border: 1px solid var(--nx-line-strong);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+  padding: 0 14px 14px;
+  overflow: hidden;
+}
+
+.rn-panel-kicker {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -14px 2px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--nx-line);
+  background: #eef2f6;
+}
+
+.reserve-notice-list-panel .rn-panel-kicker {
+  margin: 0 -12px 2px;
+  padding: 10px 12px;
+}
+
+.rn-panel-kicker strong {
+  color: #334155;
+  font-size: var(--nx-fs-body);
+  font-weight: 600;
+}
+
+.rn-panel-kicker span {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rn-panel-kicker-accent {
+  background: var(--nx-accent-soft);
+  border-bottom-color: rgba(15, 148, 142, 0.22);
+}
+
+.rn-panel-kicker-accent strong {
+  color: var(--nx-accent-strong);
+}
+
+/* 列表项：白卡浮在浅底上，选中态更醒目 */
+.app-shell.app-frame .reserve-notice-item {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel);
+  cursor: pointer;
+  transition: border-color var(--nx-t-fast) var(--nx-ease), box-shadow var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .reserve-notice-item:hover {
+  border-color: var(--nx-accent-line);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.app-shell.app-frame .reserve-notice-item-active,
+.app-shell.app-frame .reserve-notice-item-active:hover {
+  border-color: var(--nx-accent);
+  box-shadow: inset 2px 0 0 var(--nx-accent), var(--nx-shadow-card);
+}
+
+/* 一键复制按钮：悬停/选中时显现 */
+.reserve-notice-item-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.rn-copy-button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  opacity: 0;
+  transition: opacity var(--nx-t-fast) var(--nx-ease);
+}
+
+.reserve-notice-item:hover .rn-copy-button,
+.reserve-notice-item-active .rn-copy-button,
+.rn-copy-button:focus-visible {
+  opacity: 1;
+}
+
+/* ---------- 列表区内部滚动，减少整页滚动 ---------- */
+.app-shell.app-frame .reserve-notice-list {
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.app-shell.app-frame .outlook-invite-list {
+  max-height: calc(100vh - 340px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* ---------- 预览面板吸附 ---------- */
+.app-shell.app-frame .reserve-notice-preview-panel,
+.app-shell.app-frame .outlook-invite-preview {
+  position: sticky;
+  top: 12px;
+  align-self: start;
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---------- 预览正文 ---------- */
+.app-shell.app-frame .reserve-notice-preview-body,
+.app-shell.app-frame .outlook-invite-body-preview {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 时间分析补充（在 bridge 基础上加深）---------- */
+.time-analysis-select select,
+.time-analysis-search input,
+.time-analysis-date-field input {
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel);
+}
+
+.time-analysis-range-reset {
+  border-radius: var(--nx-r-sm);
+}
+
+.time-analysis-grid-scroll {
+  max-height: calc(100vh - 330px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.time-analysis-grid-scroll table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--nx-panel-soft);
+}
+
+.time-analysis-chart-legend span {
+  font-weight: 500;
+  color: var(--nx-muted);
+}
+
+.time-analysis-health-score strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 统一三模块中的次级说明文字 */
+.app-shell.app-frame .reserve-notice-item-meta,
+.app-shell.app-frame .reserve-notice-preview-meta,
+.app-shell.app-frame .outlook-invite-detail-grid span,
+.time-analysis-panel-head span {
+  color: var(--nx-muted);
+}

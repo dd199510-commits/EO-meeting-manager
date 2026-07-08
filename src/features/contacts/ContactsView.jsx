@@ -95,40 +95,41 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
   }
 
   return (
-    <section className="contacts-workspace">
-      <div className="panel contacts-list-panel">
-        <div className="contacts-toolbar">
-          <div>
+    <section className="cv-workspace">
+      <div className="nx-card cv-list-panel">
+        <div className="cv-toolbar">
+          <div className="cv-toolbar-copy">
             <strong>通讯录</strong>
             <span>{linkedCount} / {contacts.length} 已填写邮箱</span>
           </div>
-          <button className="primary-button" type="button" onClick={() => setEditingContact(createEmptyContact())}>
-            <Plus size={16} />
+          <button className="nx-btn nx-btn-primary" type="button" onClick={() => setEditingContact(createEmptyContact())}>
+            <Plus />
             新建联系人
           </button>
         </div>
-        <div className="search-box contacts-search">
-          <Search size={16} />
+        <div className="cv-search">
+          <Search size={15} aria-hidden="true" />
           <input
+            className="nx-input"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="搜索姓名、邮箱或别名"
+            aria-label="搜索联系人"
           />
         </div>
-        <div className="contacts-table">
+        <div className="cv-rows" role="list">
           {filteredContacts.map((contact) => (
             <button
               key={contact.id}
               type="button"
+              role="listitem"
               className={
-                editingContact?.id === contact.id
-                  ? 'contact-row contact-row-active'
-                  : 'contact-row'
+                editingContact?.id === contact.id ? 'cv-row cv-row-active' : 'cv-row'
               }
               onClick={() => setEditingContact(contact)}
             >
-              <span className="contact-avatar"><UserRound size={15} /></span>
-              <span className="contact-row-main">
+              <span className="cv-avatar" aria-hidden="true"><UserRound size={15} /></span>
+              <span className="cv-row-main">
                 <strong>{contact.name || '未命名联系人'}</strong>
                 <em>
                   {contact.secretaries?.length
@@ -138,66 +139,86 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
                       : contact.department || '暂无别名'}
                 </em>
               </span>
-              <span className={contact.email ? 'contact-email' : 'contact-email contact-email-missing'}>
-                <Mail size={13} />
+              <span className={contact.email ? 'nx-badge nx-badge-accent' : 'nx-badge nx-badge-warn'}>
+                <Mail size={12} aria-hidden="true" />
                 {contact.email || '未填写邮箱'}
               </span>
             </button>
           ))}
-          {filteredContacts.length === 0 ? <div className="contacts-empty">没有找到联系人。</div> : null}
+          {filteredContacts.length === 0 ? (
+            <div className="nx-empty cv-empty">
+              <span>没有找到联系人。</span>
+              {search.trim() ? (
+                <button
+                  className="nx-btn nx-btn-outline"
+                  type="button"
+                  onClick={() => {
+                    setEditingContact(createEmptyContact(search.trim()))
+                    setSearch('')
+                  }}
+                >
+                  <Plus size={14} />
+                  新建联系人「{search.trim()}」
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <aside className="panel contacts-editor-panel">
-        <div className="contacts-editor-head">
-          <div>
-            <strong>{formData.id ? '编辑联系人' : '新建联系人'}</strong>
-            <span>用于会议参会人自动匹配与后续会邀发送。</span>
-          </div>
+      <aside className="nx-card cv-editor-panel">
+        <div className="cv-editor-head">
+          <strong>{formData.id ? '编辑联系人' : '新建联系人'}</strong>
+          <span>用于会议参会人自动匹配与后续会邀发送。</span>
         </div>
-        <div className="contacts-editor-form">
-          <label className="field">
+        <div className="cv-editor-form">
+          <label className="nx-field">
             <span>姓名</span>
             <input
+              className="nx-input"
               value={formData.name}
               onChange={(event) => updateForm({ name: event.target.value })}
               placeholder="张三"
             />
           </label>
-          <label className="field">
+          <label className="nx-field">
             <span>邮箱</span>
             <input
+              className="nx-input"
               value={formData.email}
               onChange={(event) => updateForm({ email: event.target.value })}
               placeholder="name@example.com"
             />
           </label>
-          <label className="field">
+          <label className="nx-field">
             <span>别名</span>
             <input
+              className="nx-input"
               value={Array.isArray(formData.aliases) ? formData.aliases.join('、') : formData.aliases}
               onChange={(event) => updateForm({ aliases: event.target.value })}
               placeholder="英文名、中文名或常用简称，用顿号分隔"
             />
           </label>
-          <label className="field">
+          <div className="nx-field">
             <span>秘书</span>
-            <div className="secretary-fields">
+            <div className="cv-secretaries">
               {(Array.isArray(formData.secretaries) ? formData.secretaries : parseSecretaries(formData.secretaries)).map((secretary, index) => (
-                <div key={secretary.id || index} className="secretary-row">
+                <div key={secretary.id || index} className="cv-secretary-row">
                   <input
+                    className="nx-input"
                     value={secretary.name}
                     onChange={(event) => updateSecretary(index, { name: event.target.value })}
                     placeholder="秘书姓名"
                   />
                   <input
+                    className="nx-input"
                     value={secretary.email}
                     onChange={(event) => updateSecretary(index, { email: event.target.value })}
                     placeholder="秘书邮箱"
                   />
                   <button
                     type="button"
-                    className="icon-button danger secretary-remove"
+                    className="nx-btn nx-btn-danger cv-secretary-remove"
                     onClick={() => removeSecretary(index)}
                     aria-label="删除秘书"
                   >
@@ -205,41 +226,44 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
                   </button>
                 </div>
               ))}
-              <button type="button" className="ghost-button secretary-add" onClick={addSecretary}>
+              <button type="button" className="nx-btn nx-btn-outline" onClick={addSecretary}>
                 <Plus size={14} />
                 添加秘书
               </button>
             </div>
-          </label>
-          <div className="contacts-editor-grid">
-            <label className="field">
+          </div>
+          <div className="cv-editor-grid">
+            <label className="nx-field">
               <span>部门</span>
               <input
+                className="nx-input"
                 value={formData.department}
                 onChange={(event) => updateForm({ department: event.target.value })}
               />
             </label>
-            <label className="field">
+            <label className="nx-field">
               <span>职务</span>
               <input
+                className="nx-input"
                 value={formData.title}
                 onChange={(event) => updateForm({ title: event.target.value })}
               />
             </label>
           </div>
-          <label className="field">
+          <label className="nx-field">
             <span>备注</span>
             <textarea
+              className="nx-input"
               rows="3"
               value={formData.notes}
               onChange={(event) => updateForm({ notes: event.target.value })}
             />
           </label>
         </div>
-        <div className="panel-actions contacts-editor-actions">
+        <div className="cv-editor-actions">
           {formData.id ? (
             <button
-              className="ghost-button danger"
+              className="nx-btn nx-btn-danger"
               type="button"
               onClick={() => {
                 onDeleteContact(formData.id)
@@ -250,11 +274,11 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
               删除
             </button>
           ) : (
-            <button className="ghost-button" type="button" onClick={() => setEditingContact(null)}>
+            <button className="nx-btn nx-btn-quiet" type="button" onClick={() => setEditingContact(null)}>
               清空
             </button>
           )}
-          <button className="primary-button" type="button" onClick={saveForm}>
+          <button className="nx-btn nx-btn-primary" type="button" onClick={saveForm}>
             保存联系人
           </button>
         </div>

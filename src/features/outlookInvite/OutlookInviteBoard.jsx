@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { toast } from '../../components/Feedback'
 import { CalendarPlus, CheckSquare, Download, Search, Square, TriangleAlert } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
 import { buildOutlookInviteRows, downloadOutlookVbaScript, downloadOutlookVbsScript } from './outlookInviteUtils'
@@ -163,13 +164,13 @@ export function OutlookInviteBoard({
 
   function exportRows(format) {
     if (selectedRows.length === 0) {
-      window.alert('请先选择至少一个可生成会邀的会议方案。')
+      toast('请先选择至少一个可生成会邀的会议方案', 'warning')
       return
     }
 
     const blocked = selectedRows.filter((row) => row.requiredEmails.length === 0 || row.missingRequired.length > 0)
     if (blocked.length > 0) {
-      window.alert('有会议缺少必填参会人邮箱，请补齐后再生成 VBA。')
+      toast('有会议缺少必填参会人邮箱，请补齐后再生成 VBA', 'warning')
       return
     }
 

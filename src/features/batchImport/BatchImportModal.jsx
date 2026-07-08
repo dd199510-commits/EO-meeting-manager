@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
+import { confirmDialog } from '../../components/Feedback'
 import { parseBatchImportText } from './batchImportUtils'
 
 export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
@@ -11,6 +12,31 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
     setManualMap({})
     onClose()
   }
+
+  async function requestClose() {
+    if (rawText.trim()) {
+      const discard = await confirmDialog({
+        title: '放弃导入',
+        message: '已粘贴的数据尚未导入，确定关闭吗？',
+        confirmLabel: '放弃',
+        danger: true,
+      })
+      if (!discard) return
+    }
+    handleClose()
+  }
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') requestClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, rawText])
 
   const parseResult = useMemo(() => {
     if (!rawText.trim()) return { rows: [], error: '' }
@@ -47,11 +73,11 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
   const unmatchedRows = rowsWithManualMatch.filter((row) => !row.valid)
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card modal-wide">
+    <div className="modal-backdrop" onClick={requestClose}>
+      <div className="modal-card modal-wide" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h2>批量导入历史记录</h2>
-          <button className="icon-button" onClick={handleClose}>
+          <button className="icon-button" onClick={requestClose} aria-label="关闭">
             <X size={18} />
           </button>
         </div>

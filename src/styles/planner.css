@@ -1,0 +1,484 @@
+/* =============================================
+   排程模块（过渡优化层，planner/review）
+   核心目标：
+   1. 日历改为容器内滚动 + 表头/时间轴吸附，
+      消除整页滚轮定位
+   2. 任务/方案层级视觉化（步骤条、候选方案卡）
+   ============================================= */
+
+/* ---- 周视图日历：内部滚动 ---- */
+.app-shell.app-frame .review-calendar {
+  max-height: calc(100vh - 208px);
+  min-height: 380px;
+  overflow-y: auto;
+  overflow-x: clip;
+  overscroll-behavior: contain;
+  position: relative;
+  scrollbar-gutter: stable;
+}
+
+/* 吸附表头：容器内滚动后 top 归零，背景改实色避免透叠 */
+.app-shell.app-frame .review-calendar .time-head,
+.app-shell.app-frame .review-calendar .review-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  scroll-margin-top: 0;
+}
+
+.app-shell.app-frame .review-calendar .review-day-head {
+  border-bottom: 1px solid var(--nx-line);
+}
+
+/* ---- 月视图：同样内部滚动 ---- */
+.app-shell.app-frame .review-month-board {
+  max-height: calc(100vh - 208px);
+  min-height: 380px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.app-shell.app-frame .review-month-board .review-day-head,
+.app-shell.app-frame .review-month-board .time-head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ---- 检查清单侧栏：吸附 + 内部滚动，始终可见 ---- */
+.app-shell.app-frame .review-checklist-panel {
+  position: sticky;
+  top: 12px;
+  align-self: start;
+  max-height: calc(100vh - 96px);
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.app-shell.app-frame .review-checklist-list {
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* ---- 列表视图滚动区 ---- */
+.app-shell.app-frame .review-list-scroll {
+  max-height: calc(100vh - 208px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---- 单行工具栏 ---- */
+.app-shell.app-frame .review-toolbar-slim {
+  display: grid;
+  gap: 0;
+}
+
+.app-shell.app-frame .review-toolbar-slim .review-toolbar-row-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-shell.app-frame .review-toolbar-slim .review-toolbar-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+}
+
+.app-shell.app-frame .review-toolbar-slim .review-toolbar-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.app-shell.app-frame .review-toolbar-slim .review-toolbar-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel);
+}
+
+.app-shell.app-frame .review-toolbar-slim .review-toolbar-stat span {
+  font-size: 11px;
+  color: var(--nx-muted);
+}
+
+.app-shell.app-frame .review-toolbar-slim .review-toolbar-stat strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell.app-frame .review-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-shell.app-frame .review-more-popover {
+  min-width: 176px;
+}
+
+/* ---- 检查清单折叠窄条 ---- */
+.app-shell.app-frame .review-layout-collapsed {
+  grid-template-columns: 46px minmax(0, 1fr);
+}
+
+.app-shell.app-frame .review-checklist-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 6px;
+  max-height: none;
+  overflow: visible;
+}
+
+.app-shell.app-frame .review-checklist-rail-label {
+  writing-mode: vertical-rl;
+  color: var(--nx-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+.app-shell.app-frame .review-checklist-rail-count {
+  color: var(--nx-accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-shell.app-frame .review-checklist-topbar-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- 任务工作流头部减薄 ---- */
+.app-shell.app-frame .planner-task-workflow-head {
+  padding: 10px 14px;
+}
+
+.app-shell.app-frame .planner-task-title {
+  gap: 2px;
+}
+
+.app-shell.app-frame .planner-task-title h2 {
+  font-size: 16px;
+}
+
+.app-shell.app-frame .planner-task-title p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell.app-frame .planner-review-step-card {
+  padding: 10px;
+}
+
+/* ---- 任务工作流头部与步骤条 ---- */
+.app-shell.app-frame .planner-task-workflow-head {
+  border-radius: var(--nx-r-md);
+}
+
+.app-shell.app-frame .planner-task-title span {
+  color: var(--nx-accent-strong);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+}
+
+.app-shell.app-frame .planner-task-title h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.app-shell.app-frame .planner-task-title p {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.app-shell.app-frame .planner-task-stepper {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel-soft);
+}
+
+.app-shell.app-frame .planner-task-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--nx-r-full);
+  background: transparent;
+  color: var(--nx-muted);
+  cursor: pointer;
+  transition: background var(--nx-t-fast) var(--nx-ease), color var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .planner-task-step span {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--nx-line);
+  color: var(--nx-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.app-shell.app-frame .planner-task-step strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.app-shell.app-frame .planner-task-step-active {
+  background: #ffffff;
+  color: var(--nx-accent-strong);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.app-shell.app-frame .planner-task-step-active span {
+  background: var(--nx-accent);
+  color: #ffffff;
+}
+
+/* ---- 候选方案卡片 ---- */
+.app-shell.app-frame .planner-scheme-chip {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel);
+  cursor: pointer;
+  transition: border-color var(--nx-t-fast) var(--nx-ease), box-shadow var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .planner-scheme-chip:hover {
+  border-color: var(--nx-accent-line);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.app-shell.app-frame .planner-queue-adopt-button {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-color: var(--nx-accent-line);
+  color: var(--nx-accent-strong);
+  background: var(--nx-accent-soft);
+}
+
+.app-shell.app-frame .planner-queue-adopt-button:hover {
+  border-color: var(--nx-accent);
+  background: #dcfbf5;
+}
+
+/* ---- 任务首页列表 ---- */
+.app-shell.app-frame .planner-task-home-item {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel);
+  transition: border-color var(--nx-t-fast) var(--nx-ease), background var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .planner-task-home-item:hover {
+  border-color: var(--nx-accent-line);
+}
+
+.app-shell.app-frame .planner-task-home-item-active {
+  border-color: var(--nx-accent);
+  background: var(--nx-accent-soft);
+}
+
+.app-shell.app-frame .planner-task-home-list {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+}
+
+/* ---- 层级贯通：面包屑 + 任务切换 ---- */
+.app-shell.app-frame .planner-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.app-shell.app-frame .planner-breadcrumb-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .planner-breadcrumb-link:hover {
+  color: var(--nx-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.app-shell.app-frame .planner-breadcrumb-sep {
+  color: var(--nx-soft);
+  font-size: 14px;
+}
+
+.app-shell.app-frame .planner-task-switcher {
+  min-height: 30px;
+  max-width: 300px;
+  padding: 2px 26px 2px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: var(--nx-ink);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--nx-t-fast) var(--nx-ease), background var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .planner-task-switcher:hover {
+  border-color: var(--nx-line);
+  background: var(--nx-panel-soft);
+}
+
+.app-shell.app-frame .planner-breadcrumb-current {
+  color: var(--nx-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---- 任务卡三步进度（与工作区步骤条同语言）---- */
+.app-shell.app-frame .planner-task-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app-shell.app-frame .planner-task-stage-seg {
+  width: 16px;
+  height: 4px;
+  border-radius: var(--nx-r-full);
+  background: var(--nx-line);
+  flex: 0 0 auto;
+}
+
+.app-shell.app-frame .planner-task-stage-seg-done {
+  background: var(--nx-accent);
+}
+
+.app-shell.app-frame .planner-task-stage-seg-current {
+  background: rgba(15, 148, 142, 0.35);
+}
+
+.app-shell.app-frame .planner-task-stage-label {
+  margin-left: 5px;
+  color: var(--nx-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell.app-frame .planner-task-home-hint {
+  margin: 4px 0 0;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.app-shell.app-frame .review-nav-today {
+  min-height: 28px;
+  margin-left: 4px;
+  padding: 0 10px;
+  font-size: var(--nx-fs-caption);
+}
+
+/* =====「调整与采用」步骤：视口满高，日历吃满剩余空间 =====
+   页面本身不再滚动，彻底避免定位操作引发的整页跳动 */
+.app-frame-planner .app-main {
+  height: 100vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.app-frame-planner .app-page-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.planner-step-review {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  overflow: hidden;
+}
+
+.planner-step-review .planner-task-layout,
+.planner-step-review .planner-task-main,
+.planner-step-review .planner-review-step-card,
+.planner-step-review .planner-review-step-board {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.planner-step-review .review-layout-integrated {
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.planner-step-review .review-checklist-panel {
+  position: static;
+  height: 100%;
+  max-height: none;
+}
+
+.planner-step-review .review-layout-integrated > .panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.planner-step-review .review-calendar,
+.planner-step-review .review-month-board,
+.planner-step-review .review-list-scroll {
+  max-height: none;
+  min-height: 0;
+  height: auto;
+}
+
+.planner-step-review .review-empty-state {
+  align-self: start;
+}

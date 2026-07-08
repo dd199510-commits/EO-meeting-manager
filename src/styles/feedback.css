@@ -1,0 +1,114 @@
+/* =============================================
+   全局反馈：toast 通知 + 确认弹窗
+   ============================================= */
+
+.nx-toast-stack {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.nx-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(480px, 90vw);
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-float);
+  color: var(--nx-ink-2);
+  font-size: var(--nx-fs-body);
+  animation: nx-toast-in 0.22s var(--nx-ease);
+}
+
+.nx-toast svg {
+  flex: 0 0 auto;
+}
+
+.nx-toast-success svg { color: var(--nx-ok); }
+.nx-toast-info svg { color: var(--nx-info); }
+.nx-toast-warning svg { color: var(--nx-warn); }
+.nx-toast-error svg { color: var(--nx-danger); }
+
+.nx-toast-warning { border-color: rgba(217, 119, 6, 0.3); }
+.nx-toast-error { border-color: rgba(220, 38, 38, 0.3); }
+
+@keyframes nx-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nx-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.4);
+  animation: nx-fade-in 0.16s var(--nx-ease);
+}
+
+@keyframes nx-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.nx-confirm-card {
+  width: min(400px, 100%);
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-lg);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-modal);
+  animation: nx-toast-in 0.18s var(--nx-ease);
+}
+
+.nx-confirm-card strong {
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-title);
+  font-weight: 600;
+}
+
+.nx-confirm-card p {
+  margin: 0;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.nx-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.nx-btn-confirm-danger {
+  background: var(--nx-danger);
+  border-color: var(--nx-danger);
+  color: #ffffff;
+}
+
+.nx-btn-confirm-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}

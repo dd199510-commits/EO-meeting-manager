@@ -1,0 +1,46 @@
+/* =============================================
+   基础层：排版 / 焦点 / 滚动条 / 动效偏好
+   ============================================= */
+
+.app-shell.app-frame {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 键盘焦点统一 */
+.app-shell.app-frame button:focus-visible,
+.app-shell.app-frame input:focus-visible,
+.app-shell.app-frame select:focus-visible,
+.app-shell.app-frame textarea:focus-visible,
+.app-shell.app-frame [tabindex]:focus-visible {
+  outline: 2px solid var(--nx-accent-line);
+  outline-offset: 1px;
+}
+
+/* 滚动条 */
+.app-shell.app-frame ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app-shell.app-frame ::-webkit-scrollbar-thumb {
+  border-radius: var(--nx-r-full);
+  background: rgba(100, 116, 139, 0.28);
+}
+
+.app-shell.app-frame ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+}
+
+.app-shell.app-frame ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 减弱动效 */
+@media (prefers-reduced-motion: reduce) {
+  .app-shell.app-frame *,
+  .app-shell.app-frame *::before,
+  .app-shell.app-frame *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

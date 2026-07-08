@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 
 const ACCESS_SESSION_KEY = 'meeting-manager:access-unlocked:v1'
 
-function isAccessLockEnabled() {
-  return import.meta.env.VITE_ENABLE_ACCESS_LOCK === 'true'
+function getAccessPassword() {
+  return String(import.meta.env.VITE_ACCESS_PASSWORD || '')
 }
 
-function getAccessPassword() {
-  return String(import.meta.env.VITE_ACCESS_PASSWORD || 'EO2026')
+function isAccessLockEnabled() {
+  // 需同时开启开关并配置密码，避免误开启后落到硬编码默认值
+  return import.meta.env.VITE_ENABLE_ACCESS_LOCK === 'true' && getAccessPassword().length > 0
 }
 
 export function AccessGate({ children }) {

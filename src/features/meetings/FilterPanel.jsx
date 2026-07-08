@@ -11,16 +11,12 @@ export function FilterPanel({ open, filters, onChange, onReset }) {
   if (!open) return null
 
   return (
-    <div className="panel">
-      <div className="panel-grid">
-        <label className="field">
-          <span className="field-label">
-            <span className="field-glyph field-glyph-blue" aria-hidden="true">
-              <span className="field-glyph-core" />
-            </span>
-            主频率
-          </span>
+    <div className="nx-card fp-panel">
+      <div className="fp-grid">
+        <label className="nx-field">
+          <span>主频率</span>
           <select
+            className="nx-select"
             value={draft.frequency}
             onChange={(event) => setDraft({ ...draft, frequency: event.target.value })}
           >
@@ -32,40 +28,28 @@ export function FilterPanel({ open, filters, onChange, onReset }) {
             ))}
           </select>
         </label>
-        <label className="field">
-          <span className="field-label">
-            <span className="field-glyph field-glyph-cyan" aria-hidden="true">
-              <span className="field-glyph-core" />
-            </span>
-            搜索
-          </span>
+        <label className="nx-field">
+          <span>搜索</span>
           <input
+            className="nx-input"
             value={draft.search}
             onChange={(event) => setDraft({ ...draft, search: event.target.value })}
             placeholder="会议名称或参会人"
           />
         </label>
-        <label className="field">
-          <span className="field-label">
-            <span className="field-glyph field-glyph-green" aria-hidden="true">
-              <span className="field-glyph-core" />
-            </span>
-            参会人
-          </span>
+        <label className="nx-field">
+          <span>参会人</span>
           <input
+            className="nx-input"
             value={draft.attendee}
             onChange={(event) => setDraft({ ...draft, attendee: event.target.value })}
             placeholder="按参会人筛选"
           />
         </label>
-        <label className="field">
-          <span className="field-label">
-            <span className="field-glyph field-glyph-violet" aria-hidden="true">
-              <span className="field-glyph-core" />
-            </span>
-            下次会议
-          </span>
+        <label className="nx-field">
+          <span>下次会议</span>
           <select
+            className="nx-select"
             value={draft.timeRange}
             onChange={(event) => setDraft({ ...draft, timeRange: event.target.value })}
           >
@@ -75,14 +59,10 @@ export function FilterPanel({ open, filters, onChange, onReset }) {
             <option value="30days">30天内</option>
           </select>
         </label>
-        <label className="field">
-          <span className="field-label">
-            <span className="field-glyph field-glyph-amber" aria-hidden="true">
-              <span className="field-glyph-core" />
-            </span>
-            历史状态
-          </span>
+        <label className="nx-field">
+          <span>历史状态</span>
           <select
+            className="nx-select"
             value={draft.historyStatus}
             onChange={(event) => setDraft({ ...draft, historyStatus: event.target.value })}
           >
@@ -91,18 +71,17 @@ export function FilterPanel({ open, filters, onChange, onReset }) {
             <option value="none">无记录</option>
           </select>
         </label>
-        <div className="field field-span-2">
-          <span className="field-label">
-            <span className="field-glyph field-glyph-slate" aria-hidden="true">
-              <span className="field-glyph-core" />
-            </span>
-            频率类型
-          </span>
-          <div className="checkbox-row">
+        <div className="nx-field fp-span-2">
+          <span>频率类型（可多选）</span>
+          <div className="fp-checks">
             {Object.entries(FREQUENCY_LABELS).map(([value, label]) => (
-              <label key={value} className="checkbox-chip">
+              <label
+                key={value}
+                className={draft.frequencyTypes.includes(value) ? 'mv-chip mv-chip-active' : 'mv-chip'}
+              >
                 <input
                   type="checkbox"
+                  className="fp-check-input"
                   checked={draft.frequencyTypes.includes(value)}
                   onChange={(event) =>
                     setDraft((current) => ({
@@ -119,11 +98,11 @@ export function FilterPanel({ open, filters, onChange, onReset }) {
           </div>
         </div>
       </div>
-      <div className="panel-actions">
-        <button className="ghost-button" onClick={onReset}>
+      <div className="fp-actions">
+        <button className="nx-btn nx-btn-quiet" onClick={onReset} type="button">
           重置
         </button>
-        <button className="primary-button" onClick={() => onChange(draft)}>
+        <button className="nx-btn nx-btn-primary" onClick={() => onChange(draft)} type="button">
           应用筛选
         </button>
       </div>
