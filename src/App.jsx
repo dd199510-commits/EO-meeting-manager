@@ -487,6 +487,27 @@ function App() {
     return taskId
   }
 
+  function updateCurrentPlanningTaskAiState(nextAiState) {
+    if (!currentPlanningTaskId) return
+
+    const normalizedAiState = normalizeAiState(nextAiState)
+    const now = new Date().toISOString()
+
+    setPlanningTasks((current) =>
+      current.map((task) =>
+        task.id === currentPlanningTaskId
+          ? normalizePlanningTask({
+              ...task,
+              aiState: normalizedAiState,
+              timeRange: normalizedAiState.inputMeetings?.timeRange ?? task.timeRange,
+              generatedCount: normalizedAiState.inputMeetings?.meetings?.length ?? task.generatedCount,
+              updatedAt: now,
+            })
+          : task,
+      ),
+    )
+  }
+
   function deletePlanningTask(taskId) {
     setPlanningTasks((current) => current.filter((task) => task.id !== taskId))
     if (taskId === currentPlanningTaskId) {
@@ -1392,6 +1413,7 @@ function App() {
               currentPlanningTaskId={currentPlanningTaskId}
               onCreatePlanningTask={createPlanningTaskFromAiState}
               onCreateDraftTask={createPlanningTaskFromAiState}
+              onUpdatePlanningTaskAiState={updateCurrentPlanningTaskAiState}
               onDeletePlanningTask={deletePlanningTask}
               onSelectPlanningTask={(taskId) => {
                 const task = planningTasks.find((item) => item.id === taskId)

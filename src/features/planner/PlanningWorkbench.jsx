@@ -275,6 +275,7 @@ export function PlanningWorkbench({
   currentPlanningTaskId = '',
   onCreatePlanningTask,
   onCreateDraftTask,
+  onUpdatePlanningTaskAiState,
   onSelectPlanningTask,
   onDeletePlanningTask,
   onApplyAiSchedule,
@@ -811,12 +812,15 @@ export function PlanningWorkbench({
   }, [showConnectionModal, showResultJsonModal, showInputJsonModal, showInstancesModal, selectedSchemeId, showNewTaskModal])
 
   function updatePreferences(nextPreferences) {
-    setAiState((current) => ({
-      ...current,
+    const nextAiState = {
+      ...aiState,
       inputMeetings: rawExport,
       exportBatch,
       preferences: nextPreferences,
-    }))
+    }
+
+    setAiState(nextAiState)
+    onUpdatePlanningTaskAiState?.(nextAiState)
   }
 
   function beginEditRule(rule) {
