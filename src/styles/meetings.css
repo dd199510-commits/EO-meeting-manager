@@ -7,7 +7,7 @@
   height: 100vh;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .app-frame-meetings .app-page-content {
@@ -144,6 +144,10 @@
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--nx-divider);
+}
+
+.mv-content-tabs {
+  flex: 0 0 auto;
 }
 
 .mv-search {
@@ -634,7 +638,15 @@
 
 /* ---- 回收站 ---- */
 .mv-trash-panel {
+  display: grid;
+  gap: 12px;
   padding: 16px;
+}
+
+.mv-trash-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* ---- 响应式 ---- */

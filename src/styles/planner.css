@@ -596,7 +596,7 @@
   height: 100vh;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .app-frame-planner .app-page-content {

@@ -231,10 +231,23 @@
   padding: 16px;
 }
 
+.lv-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .lv-head-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.lv-section-tabs .module-tab {
+  min-height: 26px;
+  padding-inline: 9px;
 }
 
 .lv-row {

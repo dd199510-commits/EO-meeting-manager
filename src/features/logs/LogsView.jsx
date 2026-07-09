@@ -28,7 +28,7 @@ function logTone(actionType) {
   return 'nx-dot nx-dot-info'
 }
 
-export function LogsView({ activeSection, logs, onClear, onDelete }) {
+export function LogsView({ activeSection, sectionOptions = [], onSectionChange, logs, onClear, onDelete }) {
   const safeLogs = Array.isArray(logs) ? logs.filter(Boolean) : []
 
   const planningActionTypes = new Set(['review', 'review_import', 'review_delete', 'review_move'])
@@ -45,7 +45,25 @@ export function LogsView({ activeSection, logs, onClear, onDelete }) {
   return (
     <section className="nx-card lv-panel">
       <div className="nx-section-head lv-head">
-        <span className="nx-section-title">操作审计</span>
+        <div className="lv-title-group">
+          <span className="nx-section-title">操作审计</span>
+          {sectionOptions.length > 0 ? (
+            <div className="module-tabs lv-section-tabs" role="tablist" aria-label="记录类型切换">
+              {sectionOptions.map(({ id, label }) => (
+                <button
+                  key={id}
+                  className={activeSection === id ? 'module-tab module-tab-active' : 'module-tab'}
+                  onClick={() => onSectionChange?.(id)}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeSection === id}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <div className="lv-head-actions">
           <span className="nx-section-count">
             {activeSection === 'meetings' ? `${meetingLogs.length} 条会议记录` : `${planningLogs.length} 条排程记录`}

@@ -47,6 +47,8 @@ function getMeetingDateLabel(meeting) {
 
 export function MeetingsView({
   contentTab,
+  tabOptions = [],
+  onTabChange,
   meetings,
   deletedMeetings,
   filters,
@@ -441,9 +443,35 @@ export function MeetingsView({
     )
   }
 
+  function renderContentTabs(extraClassName = '') {
+    if (!tabOptions.length) return null
+
+    return (
+      <div
+        className={['module-tabs', 'mv-content-tabs', extraClassName].filter(Boolean).join(' ')}
+        role="tablist"
+        aria-label="会议库页面切换"
+      >
+        {tabOptions.map(({ id, label }) => (
+          <button
+            key={id}
+            className={contentTab === id ? 'module-tab module-tab-active' : 'module-tab'}
+            onClick={() => onTabChange?.(id)}
+            type="button"
+            role="tab"
+            aria-selected={contentTab === id}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   if (contentTab === 'trash') {
     return (
       <section className="nx-card mv-trash-panel">
+        <div className="mv-trash-tabs-row">{renderContentTabs()}</div>
         <TrashView
           deletedMeetings={deletedMeetings}
           onRestore={onRestoreMeeting}
@@ -459,6 +487,7 @@ export function MeetingsView({
 
       <section className="nx-card mv-list-panel">
         <div className="mv-toolbar">
+          {renderContentTabs()}
           <div className="mv-search">
             <Search size={14} aria-hidden="true" />
             <input

@@ -118,6 +118,42 @@
   font-weight: 600;
 }
 
+.module-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 3px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+}
+
+.module-tab {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--nx-r-sm) - 3px);
+  background: transparent;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.module-tab:hover {
+  color: var(--nx-ink);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.module-tab-active,
+.module-tab-active:hover {
+  color: var(--nx-accent);
+  border-color: var(--nx-accent-line);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
 .nx-section-title svg {
   width: 16px;
   height: 16px;

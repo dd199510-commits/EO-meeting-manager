@@ -325,23 +325,12 @@ function App() {
     () => meetings.filter((meeting) => meeting.status === 'deleted'),
     [meetings],
   )
-  const pageTabs = (() => {
-    if (activeTab === 'meetings') {
-      return Object.entries(MEETING_TAB_META).map(([id, label]) => ({
-        id,
-        label: id === 'trash' && deletedMeetings.length > 0 ? `${label} (${deletedMeetings.length})` : label,
-      }))
-    }
-
-    if (activeTab === 'logs') {
-      return Object.entries(LOG_TAB_META).map(([id, label]) => ({ id, label }))
-    }
-
-    return []
-  })()
-
-  const activePageTab =
-    activeTab === 'meetings' ? meetingTab : activeTab === 'planner' ? planningTab : activeTab === 'logs' ? logsTab : ''
+  const meetingTabOptions = Object.entries(MEETING_TAB_META).map(([id, label]) => ({
+    id,
+    label: id === 'trash' && deletedMeetings.length > 0 ? `${label} (${deletedMeetings.length})` : label,
+  }))
+  const logTabOptions = Object.entries(LOG_TAB_META).map(([id, label]) => ({ id, label }))
+  const activePageTab = activeTab === 'meetings' ? meetingTab : activeTab === 'logs' ? logsTab : ''
 
   useEffect(() => {
     const scrollToTop = () => {
@@ -1236,75 +1225,6 @@ function App() {
         onExport={handleExport}
       />
       <div className="app-main">
-        <header className="app-page-header">
-          <div className="app-page-header-main">
-            <span className="app-page-kicker">会议管理系统</span>
-            <div className="app-page-copy">
-              <div className="app-page-title-row">
-                <h1>{PAGE_META[activeTab].title}</h1>
-                {pageTabs.length > 0 ? (
-                  <div
-                    className="app-page-tabs"
-                    role="tablist"
-                    aria-label={`${PAGE_META[activeTab].title}模块导航`}
-                  >
-                    {pageTabs.map(({ id, label }) => (
-                      <button
-                        key={id}
-                        className={activePageTab === id ? 'tab-button tab-active' : 'tab-button'}
-                        onClick={() => {
-                          if (activeTab === 'meetings') setMeetingTab(id)
-                          if (activeTab === 'planner') setPlanningTab(id)
-                          if (activeTab === 'logs') setLogsTab(id)
-                        }}
-                        type="button"
-                        role="tab"
-                        aria-selected={activePageTab === id}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <p>{PAGE_META[activeTab].description}</p>
-            </div>
-          </div>
-          <div className="app-page-status" aria-label="系统状态">
-            <button
-              type="button"
-              className="app-page-status-chip"
-              onClick={() => {
-                setActiveTab('meetings')
-                setMeetingTab('active')
-              }}
-              title="打开会议库"
-            >
-              会议库
-              <strong>{activeMeetings.length}</strong>
-            </button>
-            <button
-              type="button"
-              className={
-                reviewConflicts.length > 0
-                  ? 'app-page-status-chip app-page-status-warning'
-                  : 'app-page-status-chip'
-              }
-              onClick={() => {
-                setActiveTab('planner')
-              }}
-              title={reviewConflicts.length > 0 ? '存在排程冲突，点击去处理' : '打开排程'}
-            >
-              冲突
-              <strong>{reviewConflicts.length}</strong>
-            </button>
-            <span>
-              Version
-              <strong>V4.0</strong>
-            </span>
-          </div>
-        </header>
-
         <div className="app-page-content">
           {activeTab === 'home' ? (
             <HomeView
@@ -1334,6 +1254,8 @@ function App() {
           ) : activeTab === 'meetings' ? (
             <MeetingsView
               contentTab={meetingTab}
+              tabOptions={meetingTabOptions}
+              onTabChange={setMeetingTab}
               meetings={activeMeetings}
               deletedMeetings={deletedMeetings}
               filters={filters}
@@ -1439,6 +1361,8 @@ function App() {
           ) : (
             <LogsView
               activeSection={logsTab}
+              sectionOptions={logTabOptions}
+              onSectionChange={setLogsTab}
               logs={logs}
               onClear={async () => {
                 const confirmed = await confirmDialog({
