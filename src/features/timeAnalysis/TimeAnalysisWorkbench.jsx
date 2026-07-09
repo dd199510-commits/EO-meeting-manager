@@ -2250,7 +2250,13 @@ function TrackedExcelTable({ reports, onRemoveItem, onSelectMeeting }) {
           </tr>
         </thead>
         <tbody>
-          {reports.flatMap((report) => {
+          {reports.length === 0 ? (
+            <tr>
+              <td colSpan={12} className="time-analysis-tracked-empty-cell">
+                导入表格后，这里会按会议名称自动汇总时长；也可以点击“维护分类”手动定义重点会议。
+              </td>
+            </tr>
+          ) : reports.flatMap((report) => {
             const rows = report.series.length > 0 ? report.series : [buildEmptySeriesRow()]
             return rows.map((item, index) => (
               <tr key={`${report.id}-${item.label}-${index}`}>
@@ -3720,7 +3726,9 @@ function splitTerms(value) {
 }
 
 function buildTrackedMeetingReports(records, groups) {
-  if (!Array.isArray(groups) || groups.length === 0) return []
+  if (!Array.isArray(groups) || groups.length === 0) {
+    return records.length > 0 ? [buildTrackedMeetingReport(buildAutoTrackedGroup(records), records)] : []
+  }
 
   const matchedRecordIds = new Set()
   const normalizedGroups = groups.map(normalizeTrackedGroup).filter((group) => group.id && group.label)
@@ -3737,6 +3745,19 @@ function buildTrackedMeetingReports(records, groups) {
     return !otherGroup.meetingType || record.meetingType === otherGroup.meetingType
   })
   return [...reports, buildTrackedMeetingReport(otherGroup, otherItems)]
+}
+
+function buildAutoTrackedGroup(records) {
+  const meetingTypes = Array.from(new Set(records.map((record) => record.meetingType).filter(Boolean)))
+  return {
+    id: 'tracked-auto-all',
+    label: meetingTypes.length === 1 ? meetingTypes[0] : '全部会议',
+    meetingType: '',
+    terms: [],
+    excludeTerms: [],
+    matchMode: 'auto',
+    locked: true,
+  }
 }
 
 function matchesTrackedGroup(record, group) {
@@ -3780,9 +3801,11 @@ function buildTrackedMeetingReport(group, items) {
   return {
     id: group.id,
     label: group.label,
-    matchText: group.matchMode === 'other'
-      ? `${group.meetingType ? `${group.meetingType} · ` : ''}未命中上方分类的会议`
-      : `${group.meetingType ? `${group.meetingType} · ` : ''}${group.terms.join(group.matchMode === 'all' ? ' + ' : ' / ')}`,
+    matchText: group.matchMode === 'auto'
+      ? '按导入明细自动汇总'
+      : group.matchMode === 'other'
+        ? `${group.meetingType ? `${group.meetingType} · ` : ''}未命中上方分类的会议`
+        : `${group.meetingType ? `${group.meetingType} · ` : ''}${group.terms.join(group.matchMode === 'all' ? ' + ' : ' / ')}`,
     count,
     plannedMinutes,
     actualMinutes,

@@ -20125,6 +20125,14 @@
   background: #f0fdfa;
 }
 
+.time-analysis-tracked-empty-cell {
+  height: 76px;
+  color: #64748b !important;
+  font-weight: 800;
+  line-height: 1.55 !important;
+  white-space: normal !important;
+}
+
 .time-analysis-metric-good {
   color: #047857 !important;
   font-weight: 900;
