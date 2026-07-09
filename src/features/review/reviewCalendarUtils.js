@@ -47,7 +47,7 @@ export function getCalendarHourRange(meetings = [], fallbackStartHour = 8, fallb
   })
 
   const startHour = Math.max(0, Math.floor(minMinutes / 60))
-  const endHour = Math.min(24, Math.ceil(maxMinutes / 60))
+  const endHour = Math.min(24, Math.ceil(maxMinutes / 60) + 1)
 
   return {
     startHour,

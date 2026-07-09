@@ -499,7 +499,13 @@
 .planner-step-review .review-list-scroll {
   max-height: none;
   min-height: 0;
-  height: auto;
+  height: 100%;
+}
+
+.planner-step-review .review-calendar {
+  overflow-y: auto;
+  overflow-x: clip;
+  overscroll-behavior: contain;
 }
 
 .planner-step-review .review-empty-state {
