@@ -15350,6 +15350,60 @@
   gap: 12px;
 }
 
+@media (min-width: 1181px) {
+  .app-shell.app-frame.app-frame-planner .planner-generation-page.planner-step-review {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .app-shell.app-frame .planner-step-review .planner-task-layout,
+  .app-shell.app-frame .planner-step-review .planner-task-main,
+  .app-shell.app-frame .planner-step-review .planner-review-step-card.panel,
+  .app-shell.app-frame .planner-step-review .planner-review-step-board {
+    width: 100%;
+    max-width: none;
+  }
+
+  .app-shell.app-frame .planner-step-review .review-layout-integrated {
+    grid-template-columns: clamp(300px, 22vw, 420px) minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .app-shell.app-frame .planner-step-review .review-layout-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .app-shell.app-frame .planner-step-review .review-calendar {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1600px) {
+  .app-shell.app-frame .planner-step-review .review-layout-integrated {
+    grid-template-columns: clamp(340px, 20vw, 460px) minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .app-shell.app-frame .planner-step-review .review-calendar {
+    gap: 12px;
+  }
+
+  .app-shell.app-frame .planner-step-review .review-grid,
+  .app-shell.app-frame .planner-step-review .review-grid-month {
+    gap: 8px;
+  }
+
+  .app-shell.app-frame .planner-step-review .review-grid {
+    grid-template-columns: repeat(7, minmax(170px, 1fr));
+  }
+
+  .app-shell.app-frame .planner-step-review .review-card {
+    left: 5px;
+    right: 5px;
+  }
+}
+
 .app-shell.app-frame.app-frame-planner .planner-task-workflow-head.panel {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) auto;
