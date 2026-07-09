@@ -9477,19 +9477,15 @@
   position: sticky;
   top: 14px;
   align-self: start;
-  isolation: isolate;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-content: start;
   max-height: calc(100vh - 28px);
   overflow: hidden;
 }
 
 .app-shell.app-frame .review-checklist-topbar {
-  grid-row: 1;
-  position: relative;
-  z-index: 3;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -9538,16 +9534,12 @@
 }
 
 .app-shell.app-frame .review-checklist-controls {
-  grid-row: 2;
-  position: relative;
-  z-index: 3;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: min-content;
   gap: 8px;
   min-width: 0;
-  padding-bottom: 2px;
-  background: #ffffff;
 }
 
 .app-shell.app-frame .review-checklist-search {
@@ -9626,13 +9618,11 @@
 }
 
 .app-shell.app-frame .review-checklist-list {
-  grid-row: 3;
-  position: relative;
-  z-index: 1;
+  flex: 1 1 auto;
   display: grid;
+  align-content: start;
   gap: 6px;
   min-height: 0;
-  margin-top: 2px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 2px;

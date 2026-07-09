@@ -58,12 +58,15 @@
   top: 12px;
   align-self: start;
   max-height: calc(100vh - 96px);
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   overflow: hidden;
 }
 
 .app-shell.app-frame .review-checklist-list {
+  flex: 1 1 auto;
+  align-content: start;
   min-height: 0;
   max-height: none;
   overflow-y: auto;
@@ -463,12 +466,32 @@
   max-height: none;
 }
 
-.planner-step-review .review-layout-integrated > .panel {
+.planner-step-review .review-layout-integrated > .panel:not(.review-checklist-panel) {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+}
+
+.planner-step-review .review-checklist-panel:not(.review-checklist-rail) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.planner-step-review .review-checklist-topbar,
+.planner-step-review .review-checklist-controls {
+  flex: 0 0 auto;
+}
+
+.planner-step-review .review-checklist-list {
+  flex: 1 1 auto;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .planner-step-review .review-calendar,
