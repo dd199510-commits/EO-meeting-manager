@@ -48,8 +48,88 @@ const STORAGE_KEY = 'meeting-manager:time-analysis-records:v2'
 const FILTER_STORAGE_KEY = 'meeting-manager:time-analysis-filters:v1'
 const SAVED_VIEWS_STORAGE_KEY = 'meeting-manager:time-analysis-saved-views:v1'
 const TRACKED_GROUPS_STORAGE_KEY = 'meeting-manager:time-analysis-tracked-groups:v4'
-const DEFAULT_TRACKED_PLANNED_MINUTES = {}
-const DEFAULT_TRACKED_MEETING_GROUPS = []
+const DEFAULT_TRACKED_MEETING_PRESETS = [
+  {
+    id: 'tracked-regular-one-on-one',
+    label: '常规会议 1-1',
+    items: [
+      ['1-1 w 沈抖', 60],
+      ['1-1 w 王海峰', 60],
+      ['1-1 w Julius', 45],
+      ['1-1 w 王云鹏', 60],
+      ['1-1 w Victor', 60],
+      ['1-1 w Jackson', 60],
+      ['1-1 w 刘维', 60],
+      ['1-1 w 齐飞', 60],
+      ['1-1 w Ethan', 30],
+      ['1-1 w Henry', 60],
+      ['1-1 w 吴甜', 60],
+      ['1-1 w 王颖', 60],
+      ['1-1 w 贾磊', 60],
+    ],
+  },
+  {
+    id: 'tracked-regular-monthly',
+    label: '常规会议 月度会',
+    items: [
+      ['MEG月度会', 150],
+      ['MEG月度会（季度末）', 150],
+      ['IDG月度会', 120],
+      ['IDG月度会（季度末）', 120],
+      ['ACG月度会', 120],
+      ['ACG月度会（季度末）', 120],
+      ['PSIG月度会', 60],
+      ['PSIG月度会（季度末）', 60],
+      ['Operational review', 60],
+      ['CS/MA联席会议', 90],
+      ['BOE双月会', 90],
+      ['PR&GR月度会', 60],
+      ['人才委月度会', 120],
+      ['全体高管月度会', 90],
+      ['S1 Monthly meeting', 90],
+      ['IR月度会', 60],
+      ['法务季度汇报会', 60],
+    ],
+  },
+  {
+    id: 'tracked-trainee-one-on-one',
+    label: '常规会议 管培生1-1',
+    items: [
+      ['1-1 w 梅凯文', 30],
+      ['1-1 w 于文浩', 30],
+      ['1-1 w 高哲铭', 30],
+      ['1-1 w 徐子涵', 30],
+      ['1-1 w 韩嘉', 30],
+      ['1-1 w 邵小满', 30],
+    ],
+  },
+  {
+    id: 'tracked-other-meetings',
+    label: '其他会议',
+    items: [
+      ['百度APP周会', 60],
+      ['千帆汇报周会', 60],
+      ['数字人月会', 60],
+      ['大模型内容理解专题月度会', 45],
+      ['基础模型周会', 60],
+    ],
+  },
+]
+const DEFAULT_TRACKED_PLANNED_MINUTES = DEFAULT_TRACKED_MEETING_PRESETS.reduce((minutesMap, group) => {
+  group.items.forEach(([label, minutes]) => {
+    minutesMap[label] = minutes
+  })
+  return minutesMap
+}, {})
+const DEFAULT_TRACKED_MEETING_GROUPS = DEFAULT_TRACKED_MEETING_PRESETS.map((group) => ({
+  id: group.id,
+  label: group.label,
+  meetingType: '',
+  terms: group.items.map(([label]) => label),
+  excludeTerms: [],
+  matchMode: 'listed',
+  locked: false,
+}))
 const DEFAULT_SIMULATION_ASSUMPTIONS = {
   shortenRate: 100,
   bufferRate: 100,
@@ -3658,7 +3738,7 @@ function readStoredTrackedGroups() {
       meetingType: storedGroup.meetingType || defaultGroup.meetingType,
       terms: storedGroup.terms.length > 0 ? storedGroup.terms : defaultGroup.terms,
       excludeTerms: storedGroup.excludeTerms,
-      locked: true,
+      locked: defaultGroup.locked,
     }
   })
   const customGroups = normalized.filter((group) => !defaultGroupIds.has(group.id))
