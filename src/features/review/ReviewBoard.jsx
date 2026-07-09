@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Download,
   Filter,
+  Globe2,
   List,
   Lock,
   MoreHorizontal,
@@ -29,8 +30,16 @@ import {
   minutesToTime,
   timeToMinutes,
 } from './reviewCalendarUtils'
+import {
+  DEFAULT_REVIEW_TIME_ZONE,
+  REVIEW_TIME_ZONE_OPTIONS,
+  convertDisplaySlotToSource,
+  convertMeetingToTimeZone,
+} from './reviewTimeZoneUtils'
 import { addDays, addMonths, formatDate } from '../../lib/date'
 import { generateOccurrencesInRange } from '../../lib/meetingFrequency'
+
+const REVIEW_TIME_ZONE_STORAGE_KEY = 'meeting-manager:ui:review-time-zone:v1'
 
 function formatSourceFrequency(sourceFrequency) {
   if (!sourceFrequency) return ''
@@ -312,7 +321,20 @@ export function ReviewBoard({
   const DEFAULT_END_HOUR = 20
   const WEEK_BLOCK_HEIGHT = 18
   const MONTH_BLOCK_HEIGHT = 14
-  const firstDate = scheduledMeetings[0]?.date ?? new Date().toISOString().slice(0, 10)
+  const [displayTimeZone, setDisplayTimeZone] = useState(
+    () => {
+      if (typeof window === 'undefined') return DEFAULT_REVIEW_TIME_ZONE
+      const stored = window.localStorage.getItem(REVIEW_TIME_ZONE_STORAGE_KEY)
+      return REVIEW_TIME_ZONE_OPTIONS.some((item) => item.value === stored)
+        ? stored
+        : DEFAULT_REVIEW_TIME_ZONE
+    },
+  )
+  const displayScheduledMeetings = useMemo(
+    () => scheduledMeetings.map((meeting) => convertMeetingToTimeZone(meeting, displayTimeZone)),
+    [displayTimeZone, scheduledMeetings],
+  )
+  const firstDate = displayScheduledMeetings[0]?.date ?? scheduledMeetings[0]?.date ?? new Date().toISOString().slice(0, 10)
   const [viewType, setViewType] = useState('calendar')
   const [weekAnchor, setWeekAnchor] = useState(firstDate)
   const [monthAnchor, setMonthAnchor] = useState(firstDate)
@@ -346,6 +368,12 @@ export function ReviewBoard({
   const rowRefs = useRef(new Map())
 
   useEffect(() => {
+    window.localStorage.setItem(REVIEW_TIME_ZONE_STORAGE_KEY, displayTimeZone)
+    setDetailEdits({})
+    setSelectedDay(null)
+  }, [displayTimeZone])
+
+  useEffect(() => {
     window.localStorage.setItem('meeting-manager:ui:review-checklist-collapsed:v1', checklistCollapsed ? '1' : '0')
   }, [checklistCollapsed])
 
@@ -375,10 +403,18 @@ export function ReviewBoard({
     return () => window.removeEventListener('keydown', handleEscape)
   }, [restoreDraft, selectedChecklistDetailId, selectedMeeting, selectedDay, showAddModal])
 
+  useEffect(() => {
+    if (!selectedMeeting) return
+    const nextSelected = displayScheduledMeetings.find((meeting) => meeting.id === selectedMeeting.id)
+    if (nextSelected) {
+      setSelectedMeeting(nextSelected)
+    }
+  }, [displayScheduledMeetings, selectedMeeting])
+
   const conflictIdSet = useMemo(() => new Set(conflicts.flatMap((item) => item.meetingIds)), [conflicts])
   const calendarHourRange = useMemo(
-    () => getCalendarHourRange(scheduledMeetings, DEFAULT_START_HOUR, DEFAULT_END_HOUR),
-    [scheduledMeetings],
+    () => getCalendarHourRange(displayScheduledMeetings, DEFAULT_START_HOUR, DEFAULT_END_HOUR),
+    [displayScheduledMeetings],
   )
   const startHour = calendarHourRange.startHour
   const endHour = calendarHourRange.endHour
@@ -396,13 +432,13 @@ export function ReviewBoard({
   }, [monthView.days])
 
   const meetingsByDate = useMemo(() => {
-    return scheduledMeetings.reduce((accumulator, meeting) => {
+    return displayScheduledMeetings.reduce((accumulator, meeting) => {
       const current = accumulator.get(meeting.date) ?? []
       current.push(meeting)
       accumulator.set(meeting.date, current.sort((a, b) => a.startTime.localeCompare(b.startTime)))
       return accumulator
     }, new Map())
-  }, [scheduledMeetings])
+  }, [displayScheduledMeetings])
   const sourceMeetingsById = useMemo(
     () => new Map((Array.isArray(meetings) ? meetings : []).map((meeting) => [meeting.id, meeting])),
     [meetings],
@@ -451,7 +487,7 @@ export function ReviewBoard({
           sourceRange?.start && sourceRange?.end
             ? generateOccurrencesInRange(meeting, sourceRange.start, sourceRange.end)
             : []
-        const actualInstances = scheduledMeetings.filter((item) => item.meetingId === meeting.id)
+        const actualInstances = displayScheduledMeetings.filter((item) => item.meetingId === meeting.id)
         const expectedDateSet = new Set(expectedDates)
         const actualDateSet = new Set(actualInstances.map((instance) => instance.date))
         const missingDates = expectedDates.filter((date) => !actualDateSet.has(date))
@@ -491,7 +527,7 @@ export function ReviewBoard({
         }
         return left.meeting.name.localeCompare(right.meeting.name, 'zh-CN')
       })
-  }, [activeMeetings, aiUnscheduledNames, checkStatusMap, scheduledMeetings, sourceRange])
+  }, [activeMeetings, aiUnscheduledNames, checkStatusMap, displayScheduledMeetings, sourceRange])
 
   const filteredChecklistRows = useMemo(() => {
     return checklistRows.filter((row) => {
@@ -585,12 +621,12 @@ export function ReviewBoard({
   }, [monthAnchor, pendingScrollTarget, viewType, weekAnchor])
 
   const earliestMeetingStart = useMemo(() => {
-    const earliest = scheduledMeetings.reduce(
+    const earliest = displayScheduledMeetings.reduce(
       (min, meeting) => (meeting.startTime && meeting.startTime < min ? meeting.startTime : min),
       '99:99',
     )
     return earliest === '99:99' ? '' : earliest
-  }, [scheduledMeetings])
+  }, [displayScheduledMeetings])
 
   useEffect(() => {
     const container =
@@ -740,6 +776,20 @@ export function ReviewBoard({
           <div className="review-toolbar-main">
             {viewTabs}
             {navigation ? <div className="review-toolbar-nav-slot">{navigation}</div> : null}
+            <label className="review-timezone-switcher" title="切换排程视图时区">
+              <Globe2 size={14} />
+              <select
+                value={displayTimeZone}
+                onChange={(event) => setDisplayTimeZone(event.target.value)}
+                aria-label="排程视图时区"
+              >
+                {REVIEW_TIME_ZONE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className="review-toolbar-stats" aria-label="排程统计">
             {statItems.map((item) => (
@@ -767,10 +817,27 @@ export function ReviewBoard({
     return formatDate(next)
   }
 
+  function formatMeetingTimeRange(meeting) {
+    if (meeting.endDate && meeting.endDate !== meeting.date) {
+      return `${meeting.startTime} - ${meeting.endDate} ${meeting.endTime}`
+    }
+    return `${meeting.startTime} - ${meeting.endTime}`
+  }
+
+  const toSourceSlot = useCallback((date, startTime, endTime) => {
+    return convertDisplaySlotToSource(date, startTime, endTime, displayTimeZone)
+  }, [displayTimeZone])
+
+  const moveMeetingFromDisplay = useCallback((id, date, startTime, endTime) => {
+    const sourceSlot = toSourceSlot(date, startTime, endTime)
+    onMoveMeeting(id, sourceSlot.date, sourceSlot.startTime, sourceSlot.endTime)
+  }, [onMoveMeeting, toSourceSlot])
+
   function hasDetailConflict(meetingId, date, startTime, endTime) {
+    const sourceSlot = toSourceSlot(date, startTime, endTime)
     return scheduledMeetings.some((meeting) => {
-      if (meeting.id === meetingId || meeting.date !== date) return false
-      return meeting.startTime < endTime && startTime < meeting.endTime
+      if (meeting.id === meetingId || meeting.date !== sourceSlot.date) return false
+      return meeting.startTime < sourceSlot.endTime && sourceSlot.startTime < meeting.endTime
     })
   }
 
@@ -880,7 +947,7 @@ export function ReviewBoard({
         }) ?? dragTargetRef.current
 
       if (finalTarget && finalTarget.meetingId === session.item.id) {
-        onMoveMeeting(session.item.id, finalTarget.date, finalTarget.startTime, finalTarget.endTime)
+        moveMeetingFromDisplay(session.item.id, finalTarget.date, finalTarget.startTime, finalTarget.endTime)
       }
 
       clearDragState()
@@ -900,7 +967,7 @@ export function ReviewBoard({
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerCancel)
     }
-  }, [onMoveMeeting, updateDragTargetFromPoint])
+  }, [moveMeetingFromDisplay, updateDragTargetFromPoint])
 
   function renderReviewCard(item, variant = 'week', blockHeight = WEEK_BLOCK_HEIGHT) {
     const style = calculateCardStyle(item, startHour, blockHeight)
@@ -945,7 +1012,7 @@ export function ReviewBoard({
           <div className="review-card-title">
             <span>{item.name}</span>
           </div>
-          <p>{item.startTime} - {item.endTime}</p>
+          <p>{formatMeetingTimeRange(item)}</p>
           <div className="review-card-toolbar">
             <button className="review-card-icon" onClick={() => onToggleReserved(item.id)} title="预留">
               <Pin size={12} className={item.reserved ? 'icon-active-orange' : ''} />
@@ -981,9 +1048,13 @@ export function ReviewBoard({
     }
 
     const duration = timeToMinutes(newMeeting.endTime) - timeToMinutes(newMeeting.startTime)
+    const sourceSlot = toSourceSlot(newMeeting.date, newMeeting.startTime, newMeeting.endTime)
     onAddMeeting({
       ...newMeeting,
       id: `manual-${crypto.randomUUID()}`,
+      date: sourceSlot.date,
+      startTime: sourceSlot.startTime,
+      endTime: sourceSlot.endTime,
       duration,
       addSource: 'adhoc',
     })
@@ -992,7 +1063,7 @@ export function ReviewBoard({
   }
 
   function getSuggestedLinkedStartTime(meetingId) {
-    const matchingMeeting = scheduledMeetings
+    const matchingMeeting = displayScheduledMeetings
       .filter((meeting) => meeting.meetingId === meetingId)
       .sort((left, right) => right.date.localeCompare(left.date) || right.startTime.localeCompare(left.startTime))[0]
     return matchingMeeting?.startTime ?? '09:00'
@@ -1133,11 +1204,12 @@ export function ReviewBoard({
     if (!restoreDraft.date || !restoreDraft.startTime) return
 
     const endTime = minutesToTime(timeToMinutes(restoreDraft.startTime) + restoreRow.meeting.duration)
+    const sourceSlot = toSourceSlot(restoreDraft.date, restoreDraft.startTime, endTime)
     onRestoreMissingInstance({
       meeting: restoreRow.meeting,
-      date: restoreDraft.date,
-      startTime: restoreDraft.startTime,
-      endTime,
+      date: sourceSlot.date,
+      startTime: sourceSlot.startTime,
+      endTime: sourceSlot.endTime,
     })
     setSelectedCheckMeetingId(restoreRow.id)
     closeRestoreModal()
@@ -1164,14 +1236,15 @@ export function ReviewBoard({
       if (!proceed) return
     }
 
+    const sourceSlot = toSourceSlot(linkedDraft.date, linkedDraft.startTime, endTime)
     onAddMeeting({
       id: `review-linked-${crypto.randomUUID()}`,
       taskId: '',
       meetingId: sourceMeeting.id,
       name: sourceMeeting.name,
-      date: linkedDraft.date,
-      startTime: linkedDraft.startTime,
-      endTime,
+      date: sourceSlot.date,
+      startTime: sourceSlot.startTime,
+      endTime: sourceSlot.endTime,
       duration: sourceMeeting.duration,
       attendees: sourceMeeting.attendees ?? '',
       notes: sourceMeeting.notes ?? '',
@@ -1598,7 +1671,7 @@ export function ReviewBoard({
                   <div key={item.id} className={conflictIdSet.has(item.id) ? 'schedule-item conflict' : 'schedule-item'}>
                     <div>
                       <strong>{item.name}</strong>
-                      <p>{item.startTime} - {item.endTime}</p>
+                      <p>{formatMeetingTimeRange(item)}</p>
                       {item.sourceFrequency ? <p>{formatSourceFrequency(item.sourceFrequency)}</p> : null}
                       {item.aiReason ? <p>{getReadableAiReason(item.aiReason)}</p> : null}
                     </div>
@@ -1711,7 +1784,7 @@ export function ReviewBoard({
                   <div className="review-meeting-info-metric">
                     <span>当前排程时间</span>
                     <strong>
-                      {selectedMeeting.date} · {selectedMeeting.startTime} - {selectedMeeting.endTime}
+                      {selectedMeeting.date} · {formatMeetingTimeRange(selectedMeeting)}
                     </strong>
                   </div>
                   <div className="review-meeting-info-metric">
@@ -1821,7 +1894,7 @@ export function ReviewBoard({
                   })
                   if (!proceed) return
                 }
-                onMoveMeeting(selectedMeeting.id, editDate, editStart, editEnd)
+                moveMeetingFromDisplay(selectedMeeting.id, editDate, editStart, editEnd)
                 setSelectedMeeting((current) =>
                   current
                     ? { ...current, date: editDate, startTime: editStart, endTime: editEnd }
@@ -1865,7 +1938,7 @@ export function ReviewBoard({
                 <div key={item.id} className={conflictIdSet.has(item.id) ? 'log-item schedule-item-conflict' : 'log-item'}>
                   <div>
                     <strong>{item.name}</strong>
-                    <p>{item.startTime} - {item.endTime}</p>
+                    <p>{formatMeetingTimeRange(item)}</p>
                     {item.sourceFrequency ? <p>{formatSourceFrequency(item.sourceFrequency)}</p> : null}
                     {item.attendees ? <p className="preserve-lines">{item.attendees}</p> : null}
                     {item.aiReason ? <p>{getReadableAiReason(item.aiReason)}</p> : null}
@@ -1913,7 +1986,7 @@ export function ReviewBoard({
                             })
                             if (!proceed) return
                           }
-                          onMoveMeeting(item.id, selectedDay.date, nextStart, nextEnd)
+                          moveMeetingFromDisplay(item.id, selectedDay.date, nextStart, nextEnd)
                           setSelectedDay((current) =>
                             current
                               ? {

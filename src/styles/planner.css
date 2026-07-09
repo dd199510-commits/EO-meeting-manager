@@ -132,6 +132,31 @@
   gap: 8px;
 }
 
+.app-shell.app-frame .review-timezone-switcher {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel);
+  color: var(--nx-muted);
+  flex: 0 0 auto;
+}
+
+.app-shell.app-frame .review-timezone-switcher select {
+  min-height: 26px;
+  max-width: 126px;
+  padding: 0 20px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--nx-ink-2);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+  outline: none;
+}
+
 .app-shell.app-frame .review-more-popover {
   min-width: 176px;
 }
