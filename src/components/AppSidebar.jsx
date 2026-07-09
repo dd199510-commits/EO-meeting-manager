@@ -13,6 +13,7 @@ import {
   ScrollText,
   Upload,
 } from 'lucide-react'
+import { APP_VERSION_LABEL } from '../lib/appVersion'
 
 const TAB_META = {
   home: { label: '首页', icon: House },
@@ -43,7 +44,7 @@ export function AppSidebar({
           <div className="nx-sidebar-brand-copy">
             <em>总裁办</em>
             <strong>会议管理系统</strong>
-            <span>Version V4.0</span>
+            <span>Version {APP_VERSION_LABEL}</span>
           </div>
         )}
         <button

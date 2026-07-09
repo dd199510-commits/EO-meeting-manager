@@ -77,7 +77,6 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
   }
 
   // 注意：Hook 需在提前 return 之前声明
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!open) return undefined
 

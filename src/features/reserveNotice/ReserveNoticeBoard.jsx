@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Copy, FilePlus2, PencilLine, Search, Trash2, X } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
 import { toast } from '../../components/Feedback'
+import { WorkflowBlocker } from '../../components/WorkflowBlocker'
 import { splitAttendees } from '../../lib/contacts'
 import {
   BUILT_IN_NOTICE_TEMPLATES,
@@ -149,6 +150,7 @@ export function ReserveNoticeBoard({
   onToggleSent,
   onUpdateMeeting,
   onSaveTemplates,
+  onGoToPlanner,
 }) {
   const [selectedId, setSelectedId] = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -303,6 +305,25 @@ export function ReserveNoticeBoard({
   function handleSchemeChange(schemeId) {
     setSelectedId('')
     setSelectedSchemeId(schemeId)
+  }
+
+  if (noticeTaskOptions.length === 0 || schemeOptions.length === 0) {
+    const hasTask = noticeTaskOptions.length > 0
+    return (
+      <WorkflowBlocker
+        title={hasTask ? '当前任务还没有可发送的通知方案' : '先完成排程审核，再发送预留通知'}
+        description={hasTask
+          ? '当前排程任务尚未形成可用的已采用方案。回到排程完成方案生成与审核后，这里会自动生成通知清单。'
+          : '预留通知依赖已采用的排程结果。完成会议资料、排程任务和方案审核后，系统会自动汇总需要通知的会议。'}
+        steps={[
+          { label: '建立会议库', hint: '准备会议、参会人与时长资料', done: meetings.length > 0 },
+          { label: '创建排程任务', hint: '确定本次排程时间范围', done: noticeTaskOptions.length > 0 },
+          { label: '审核并采用方案', hint: '确认最终日程后解锁通知', done: schemeOptions.length > 0 },
+        ]}
+        actionLabel="去排程中心"
+        onAction={onGoToPlanner}
+      />
+    )
   }
 
   return (

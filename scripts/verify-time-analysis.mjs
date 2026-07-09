@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import XLSX from 'xlsx'
+import readExcelFile from 'read-excel-file/node'
 import {
   HOUR_BUCKETS,
   WEEKDAY_OPTIONS,
@@ -23,15 +23,11 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-function loadWorkbookRecords(filePath) {
-  const workbook = XLSX.readFile(filePath, { cellDates: true, cellFormula: false })
-  const sheets = workbook.SheetNames.map((name) => ({
-    name,
-    rows: XLSX.utils.sheet_to_json(workbook.Sheets[name], {
-      header: 1,
-      raw: true,
-      defval: '',
-    }),
+async function loadWorkbookRecords(filePath) {
+  const workbookSheets = await readExcelFile(filePath)
+  const sheets = workbookSheets.map((worksheet) => ({
+    name: worksheet.sheet,
+    rows: worksheet.data,
   }))
   return pickMeetingRowsFromSheets(sheets)
 }
@@ -96,12 +92,12 @@ function verifyFixtureRecords() {
   }
 }
 
-function verifyExcelWorkbook(filePath) {
+async function verifyExcelWorkbook(filePath) {
   if (!filePath || !fs.existsSync(filePath)) {
     return { skipped: true, reason: 'Set TIME_ANALYSIS_EXCEL to verify a real workbook import.' }
   }
 
-  const { sheetName, records } = loadWorkbookRecords(filePath)
+  const { sheetName, records } = await loadWorkbookRecords(filePath)
   const quarters = Array.from(new Set(records.map((record) => record.quarter).filter(Boolean))).sort()
   const quarter = quarters.at(-1)
   const scopedRecords = quarter ? filterRecords(records, baseFilters(quarter)) : records
@@ -151,7 +147,7 @@ function verifyExcelWorkbook(filePath) {
 
 const result = {
   fixture: verifyFixtureRecords(),
-  excel: verifyExcelWorkbook(excelPath),
+  excel: await verifyExcelWorkbook(excelPath),
 }
 
 console.log(JSON.stringify(result, null, 2))

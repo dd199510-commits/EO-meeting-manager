@@ -208,6 +208,7 @@ const STRUCTURE_DIMENSIONS = [
     },
   },
 ]
+const DATA_TABLE_PAGE_SIZE = 40
 
 export function TimeAnalysisWorkbench() {
   const fileInputRef = useRef(null)
@@ -229,7 +230,9 @@ export function TimeAnalysisWorkbench() {
   const [benchmarkQuarter, setBenchmarkQuarter] = useState('previous')
   const [trendMetricKey, setTrendMetricKey] = useState('actualMinutes')
   const [overviewTrendMode, setOverviewTrendMode] = useState('quarter')
+  const [workspaceMode, setWorkspaceMode] = useState('overview')
   const [tableSort, setTableSort] = useState({ key: 'date', direction: 'asc' })
+  const [tablePage, setTablePage] = useState(1)
   const [isQuarterPlayback, setIsQuarterPlayback] = useState(false)
   const [activeReportStepKey, setActiveReportStepKey] = useState('overview')
   const [isReportPlayback, setIsReportPlayback] = useState(false)
@@ -380,6 +383,11 @@ export function TimeAnalysisWorkbench() {
     () => sortMeetingRecords(qualityFilteredTableRecords, tableSort),
     [qualityFilteredTableRecords, tableSort],
   )
+  const tablePageCount = Math.max(1, Math.ceil(visibleTableRecords.length / DATA_TABLE_PAGE_SIZE))
+  const pagedTableRecords = useMemo(() => {
+    const start = (tablePage - 1) * DATA_TABLE_PAGE_SIZE
+    return visibleTableRecords.slice(start, start + DATA_TABLE_PAGE_SIZE)
+  }, [tablePage, visibleTableRecords])
   const previousQuarterRecords = useMemo(
     () => records.filter((record) => record.quarter === quarterSummary.previousQuarter),
     [quarterSummary.previousQuarter, records],
@@ -467,6 +475,10 @@ export function TimeAnalysisWorkbench() {
   useEffect(() => {
     persistJson(TRACKED_GROUPS_STORAGE_KEY, trackedGroups)
   }, [trackedGroups])
+
+  useEffect(() => {
+    setTablePage((current) => Math.min(current, tablePageCount))
+  }, [tablePageCount])
 
   useEffect(() => {
     if (!isQuarterPlayback || quarters.length <= 1) return undefined
@@ -634,12 +646,10 @@ export function TimeAnalysisWorkbench() {
   }
 
   async function handleDownloadExcel() {
-    const XLSX = await import('xlsx')
-    const workbook = XLSX.utils.book_new()
+    const { default: writeExcelFile } = await import('write-excel-file/browser')
     const rows = serializeRecords(records).split('\n').map((line) => line.split('\t'))
-    const worksheet = XLSX.utils.aoa_to_sheet(rows)
-    XLSX.utils.book_append_sheet(workbook, worksheet, '会议时间分析明细')
-    XLSX.writeFile(workbook, `meeting-time-analysis-${selectedQuarter || 'all'}.xlsx`)
+    await writeExcelFile(rows, { sheet: '会议时间分析明细' })
+      .toFile(`meeting-time-analysis-${selectedQuarter || 'all'}.xlsx`)
   }
 
   function handleDownloadReport() {
@@ -953,6 +963,31 @@ export function TimeAnalysisWorkbench() {
 
   return (
     <section className="time-analysis-workbench">
+      <div className="time-analysis-mode-bar">
+        <div>
+          <span>时间分析工作区</span>
+          <strong>{workspaceMode === 'overview' ? '总览' : workspaceMode === 'diagnosis' ? '诊断' : '数据维护'}</strong>
+        </div>
+        <div className="time-analysis-mode-tabs" role="tablist" aria-label="时间分析工作模式">
+          {[
+            ['overview', '总览', BarChart3],
+            ['diagnosis', '诊断', Sparkles],
+            ['data', '数据维护', Table2],
+          ].map(([mode, label, Icon]) => (
+            <button
+              className={workspaceMode === mode ? 'time-analysis-mode-tab time-analysis-mode-tab-active' : 'time-analysis-mode-tab'}
+              type="button"
+              role="tab"
+              aria-selected={workspaceMode === mode}
+              onClick={() => setWorkspaceMode(mode)}
+              key={mode}
+            >
+              {createElement(Icon, { size: 15, 'aria-hidden': true })}
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="time-analysis-overview-group">
         <div className="time-analysis-hero">
           <div className="time-analysis-hero-main">
@@ -1046,30 +1081,41 @@ export function TimeAnalysisWorkbench() {
           </div>
         </div>
 
-        <ExcelOverviewSummary
-          selectedQuarter={selectedQuarter}
-          overview={overview}
-          statusItems={statusItems}
-          onSelectStatus={(label) => patchFilter('status', filters.status === label ? 'all' : label)}
-        />
-        <OverviewTrendSection
-          mode={overviewTrendMode}
-          onModeChange={setOverviewTrendMode}
-          trend={trend}
-          monthTrend={monthTrend}
-          selectedQuarter={selectedQuarter}
-          selectedMonth={selectedTrendMonth}
-          visibleTrendMetrics={visibleTrendMetrics}
-          onToggleTrendMetric={toggleTrendMetric}
-          activeBenchmarkQuarter={activeBenchmarkQuarter}
-          benchmarkOptions={benchmarkOptions}
-          resolvedBenchmarkQuarter={resolvedBenchmarkQuarter}
-          sameQuarterBenchmark={sameQuarterBenchmark}
-          comparisonRows={comparisonRows}
-          onSelectQuarter={selectTrendQuarter}
-          onSelectMonth={selectTrendMonth}
-          onSelectBenchmark={setBenchmarkQuarter}
-        />
+        {workspaceMode === 'overview' ? (
+          <>
+            <ExcelOverviewSummary
+              selectedQuarter={selectedQuarter}
+              overview={overview}
+              statusItems={statusItems}
+              onSelectStatus={(label) => patchFilter('status', filters.status === label ? 'all' : label)}
+            />
+            <OverviewTrendSection
+              mode={overviewTrendMode}
+              onModeChange={setOverviewTrendMode}
+              trend={trend}
+              monthTrend={monthTrend}
+              selectedQuarter={selectedQuarter}
+              selectedMonth={selectedTrendMonth}
+              visibleTrendMetrics={visibleTrendMetrics}
+              onToggleTrendMetric={toggleTrendMetric}
+              activeBenchmarkQuarter={activeBenchmarkQuarter}
+              benchmarkOptions={benchmarkOptions}
+              resolvedBenchmarkQuarter={resolvedBenchmarkQuarter}
+              sameQuarterBenchmark={sameQuarterBenchmark}
+              comparisonRows={comparisonRows}
+              onSelectQuarter={selectTrendQuarter}
+              onSelectMonth={selectTrendMonth}
+              onSelectBenchmark={setBenchmarkQuarter}
+            />
+          </>
+        ) : (
+          <div className="time-analysis-mode-intro">
+            <strong>{workspaceMode === 'data' ? '维护原始会议明细' : '定位结构变化与排期风险'}</strong>
+            <span>{workspaceMode === 'data'
+              ? '导入、校验并编辑明细；统计结果会自动同步更新。'
+              : '从趋势、节奏、异常会议和情景模拟中形成下一季度行动建议。'}</span>
+          </div>
+        )}
       </div>
 
       {copyNotice ? <p className="time-analysis-copy-notice">{copyNotice}</p> : null}
@@ -1083,33 +1129,37 @@ export function TimeAnalysisWorkbench() {
         </div>
       ) : null}
 
-      <ExcelStyleDashboard
-        overview={overview}
-        typeSummary={typeSummary}
-        locationSummary={locationSummary}
-        trackedMeetingReports={trackedMeetingReports}
-        trackedGroups={trackedGroups}
-        newGroupName={newTrackedGroupName}
-        newGroupKeywords={newTrackedGroupKeywords}
-        onNewGroupNameChange={setNewTrackedGroupName}
-        onNewGroupKeywordsChange={setNewTrackedGroupKeywords}
-        onAddTrackedGroup={addTrackedGroup}
-        onUpdateTrackedGroupLabel={updateTrackedGroupLabel}
-        onAddTrackedGroupTerms={addTrackedGroupTerms}
-        onRemoveTrackedGroupTerm={removeTrackedGroupTerm}
-        onRemoveTrackedGroupItem={removeTrackedGroupItem}
-        onRestoreTrackedGroupItem={restoreTrackedGroupItem}
-        onRemoveTrackedGroup={removeTrackedGroup}
-        onSelectType={openTypeDetail}
-        onSelectLocation={openLocationDetail}
-        onSelectTrackedMeeting={openTrackedMeetingDetail}
-      />
+      {workspaceMode === 'overview' ? (
+        <>
+          <ExcelStyleDashboard
+            overview={overview}
+            typeSummary={typeSummary}
+            locationSummary={locationSummary}
+            trackedMeetingReports={trackedMeetingReports}
+            trackedGroups={trackedGroups}
+            newGroupName={newTrackedGroupName}
+            newGroupKeywords={newTrackedGroupKeywords}
+            onNewGroupNameChange={setNewTrackedGroupName}
+            onNewGroupKeywordsChange={setNewTrackedGroupKeywords}
+            onAddTrackedGroup={addTrackedGroup}
+            onUpdateTrackedGroupLabel={updateTrackedGroupLabel}
+            onAddTrackedGroupTerms={addTrackedGroupTerms}
+            onRemoveTrackedGroupTerm={removeTrackedGroupTerm}
+            onRemoveTrackedGroupItem={removeTrackedGroupItem}
+            onRestoreTrackedGroupItem={restoreTrackedGroupItem}
+            onRemoveTrackedGroup={removeTrackedGroup}
+            onSelectType={openTypeDetail}
+            onSelectLocation={openLocationDetail}
+            onSelectTrackedMeeting={openTrackedMeetingDetail}
+          />
 
-      {detailModal ? (
-        <RecordDetailModal detail={detailModal} onClose={() => setDetailModal(null)} />
+          {detailModal ? (
+            <RecordDetailModal detail={detailModal} onClose={() => setDetailModal(null)} />
+          ) : null}
+        </>
       ) : null}
 
-      <div className="time-analysis-panel time-analysis-input-panel">
+      {workspaceMode === 'data' ? <div className="time-analysis-panel time-analysis-input-panel">
         <PanelHead icon={Table2} title="会议明细" meta={`${visibleTableRecords.length}/${tableRecords.length} 条`} />
         {(importNotice || lastDataSnapshot) ? (
           <div className="time-analysis-import-feedback">
@@ -1127,8 +1177,19 @@ export function TimeAnalysisWorkbench() {
           activeType={qualityFilter}
           onSelectType={(type) => setQualityFilter((current) => (current === type ? 'all' : type))}
         />
+        <div className="time-analysis-table-pagination" aria-label="会议明细分页">
+          <span>每页 {DATA_TABLE_PAGE_SIZE} 条 · 第 {tablePage}/{tablePageCount} 页</span>
+          <div>
+            <button className="ghost-button" type="button" onClick={() => setTablePage((current) => Math.max(1, current - 1))} disabled={tablePage <= 1}>
+              上一页
+            </button>
+            <button className="ghost-button" type="button" onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} disabled={tablePage >= tablePageCount}>
+              下一页
+            </button>
+          </div>
+        </div>
         <EditableGrid
-          records={visibleTableRecords}
+          records={pagedTableRecords}
           quality={dataQuality}
           sort={tableSort}
           onSort={toggleTableSort}
@@ -1147,11 +1208,11 @@ export function TimeAnalysisWorkbench() {
             setQualityFilter('all')
           }}
         />
-      </div>
+      </div> : null}
 
-      <details className="time-analysis-advanced-section">
+      {workspaceMode === 'diagnosis' ? <details className="time-analysis-advanced-section" open>
         <summary>
-          <span>更多分析</span>
+          <span>深度诊断与行动建议</span>
         </summary>
         <div className="time-analysis-advanced-content">
           <QuickSlicesPanel slices={quickSlices} onSelect={applyQuickSlice} />
@@ -1424,7 +1485,7 @@ export function TimeAnalysisWorkbench() {
         </div>
       </div>
         </div>
-      </details>
+      </details> : null}
     </section>
   )
 }
@@ -1581,20 +1642,11 @@ function getTableSortLabel(sort) {
 }
 
 async function parseWorkbookFile(file) {
-  const XLSX = await import('xlsx')
-  const buffer = await file.arrayBuffer()
-  const workbook = XLSX.read(buffer, {
-    type: 'array',
-    cellDates: true,
-    cellFormula: false,
-  })
-  const sheets = workbook.SheetNames.map((name) => ({
-    name,
-    rows: XLSX.utils.sheet_to_json(workbook.Sheets[name], {
-      header: 1,
-      raw: true,
-      defval: '',
-    }),
+  const { default: readExcelFile } = await import('read-excel-file/browser')
+  const workbookSheets = await readExcelFile(file)
+  const sheets = workbookSheets.map((worksheet) => ({
+    name: worksheet.sheet,
+    rows: worksheet.data,
   }))
   return pickMeetingRowsFromSheets(sheets)
 }
@@ -4055,7 +4107,11 @@ function serializeRecords(records) {
 }
 
 function downloadText(filename, content) {
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  downloadBlob(filename, content, 'text/plain;charset=utf-8')
+}
+
+function downloadBlob(filename, content, type) {
+  const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

@@ -20,10 +20,135 @@
 
 .hv-workspace {
   display: grid;
-  grid-template-rows: minmax(240px, 0.9fr) auto minmax(0, 1fr);
+  grid-template-rows: minmax(210px, 0.72fr) auto auto minmax(0, 1fr);
   gap: 12px;
   height: calc(100vh - 40px);
   min-height: 0;
+}
+
+/* ---- 会议运营流程 ---- */
+.hv-flow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 10px 14px;
+}
+
+.hv-flow-head {
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hv-flow-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.hv-flow-head span {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+}
+
+.hv-flow-head strong {
+  color: var(--nx-ink);
+  font-size: 14px;
+}
+
+.hv-flow-head .nx-btn {
+  display: none;
+}
+
+.hv-flow-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.hv-flow-step {
+  position: relative;
+  min-width: 0;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: var(--nx-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.hv-flow-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 8px;
+  border-top: 1px solid var(--nx-line-strong);
+}
+
+.hv-flow-step:hover:not(:disabled) {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+}
+
+.hv-flow-step:disabled {
+  cursor: not-allowed;
+}
+
+.hv-flow-step-done {
+  color: var(--nx-accent-strong);
+}
+
+.hv-flow-step-current {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+  color: var(--nx-ink);
+}
+
+.hv-flow-step-locked {
+  opacity: 0.5;
+}
+
+.hv-flow-step-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.hv-flow-step-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.hv-flow-step-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.hv-flow-step-copy strong,
+.hv-flow-step-copy em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hv-flow-step-copy strong {
+  color: currentColor;
+  font-size: 12px;
+}
+
+.hv-flow-step-copy em {
+  color: var(--nx-soft);
+  font-size: 10px;
+  font-style: normal;
 }
 
 /* ---- Hero ---- */
@@ -315,11 +440,28 @@
   .hv-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .hv-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .hv-flow-head .nx-btn {
+    display: inline-flex;
+  }
+
+  .hv-flow-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
   .hv-metrics,
-  .hv-grid {
+  .hv-grid,
+  .hv-flow-steps {
     grid-template-columns: 1fr;
+  }
+
+  .hv-flow-step::after {
+    display: none;
   }
 }

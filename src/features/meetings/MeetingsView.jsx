@@ -76,7 +76,6 @@ export function MeetingsView({
 
   useEffect(() => {
     window.localStorage.setItem(SORT_STORAGE_KEY, sortBy)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy])
   const [selectedMeetingId, setSelectedMeetingId] = useState('')
   const [navigatorFilter, setNavigatorFilter] = useState({ type: 'all', key: 'all' })

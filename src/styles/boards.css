@@ -7,10 +7,123 @@
 /* ---------- 通用容器 ---------- */
 .app-shell.app-frame .outlook-invite-shell,
 .app-shell.app-frame .reserve-notice-shell {
+  min-width: 0;
   border: 1px solid var(--nx-line);
   border-radius: var(--nx-r-md);
   background: var(--nx-panel);
   box-shadow: var(--nx-shadow-card);
+}
+
+/* ---------- 前置条件空状态 ---------- */
+.workflow-blocker {
+  width: min(760px, calc(100% - 32px));
+  min-height: 440px;
+  margin: 32px auto;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 20px;
+  padding: 44px;
+  text-align: center;
+}
+
+.workflow-blocker-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.workflow-blocker-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.workflow-blocker-copy {
+  display: grid;
+  gap: 8px;
+  max-width: 580px;
+}
+
+.workflow-blocker-copy > span {
+  color: var(--nx-accent-strong);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.workflow-blocker-copy h2,
+.workflow-blocker-copy p {
+  margin: 0;
+}
+
+.workflow-blocker-copy h2 {
+  color: var(--nx-ink);
+  font-size: 24px;
+}
+
+.workflow-blocker-copy p {
+  color: var(--nx-muted);
+  line-height: 1.7;
+}
+
+.workflow-blocker-steps {
+  width: min(600px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.workflow-blocker-step {
+  min-width: 0;
+  display: flex;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+  color: var(--nx-soft);
+}
+
+.workflow-blocker-step-done {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.workflow-blocker-step svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.workflow-blocker-step div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.workflow-blocker-step strong {
+  color: var(--nx-ink-2);
+  font-size: 12px;
+}
+
+.workflow-blocker-step span {
+  color: var(--nx-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.workflow-blocker-action {
+  min-width: 152px;
 }
 
 /* ---------- 概览统计卡（两模块共用）---------- */
@@ -248,6 +361,94 @@
 }
 
 /* ---------- 时间分析补充（在 bridge 基础上加深）---------- */
+.time-analysis-mode-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--nx-shadow-card);
+  backdrop-filter: blur(10px);
+}
+
+.time-analysis-mode-bar > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.time-analysis-mode-bar > div:first-child span {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+}
+
+.time-analysis-mode-bar > div:first-child strong {
+  color: var(--nx-ink);
+  font-size: 14px;
+}
+
+.time-analysis-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+}
+
+.time-analysis-mode-tab {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: calc(var(--nx-r-sm) - 2px);
+  background: transparent;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.time-analysis-mode-tab:hover {
+  color: var(--nx-ink);
+}
+
+.time-analysis-mode-tab-active {
+  background: var(--nx-panel);
+  color: var(--nx-accent-strong);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.time-analysis-mode-intro {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+}
+
+.time-analysis-mode-intro strong {
+  color: var(--nx-ink-2);
+}
+
+.time-analysis-mode-intro span {
+  color: var(--nx-muted);
+}
+
+.time-analysis-advanced-section[open] > summary {
+  margin-bottom: 12px;
+}
+
 .time-analysis-select select,
 .time-analysis-search input,
 .time-analysis-date-field input {
@@ -266,6 +467,24 @@
   scrollbar-gutter: stable;
 }
 
+.time-analysis-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.time-analysis-table-pagination > span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.time-analysis-table-pagination > div {
+  display: inline-flex;
+  gap: 6px;
+}
+
 .time-analysis-grid-scroll table thead th {
   position: sticky;
   top: 0;
@@ -281,6 +500,75 @@
 .time-analysis-health-score strong {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 会邀页中等窗口适配 ---------- */
+@media (max-width: 1400px) {
+  .app-shell.app-frame .outlook-invite-topbar {
+    grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.2fr);
+  }
+
+  .app-shell.app-frame .outlook-invite-action-buttons {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .app-shell.app-frame .outlook-invite-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app-shell.app-frame .outlook-invite-filter-group,
+  .app-shell.app-frame .outlook-invite-hidden-selection {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 980px) {
+  .app-shell.app-frame .outlook-invite-topbar,
+  .app-shell.app-frame .outlook-invite-actions,
+  .app-shell.app-frame .outlook-invite-layout,
+  .app-shell.app-frame .reserve-notice-topbar,
+  .app-shell.app-frame .reserve-notice-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell.app-frame .outlook-invite-action-buttons,
+  .app-shell.app-frame .outlook-invite-filter-group,
+  .app-shell.app-frame .outlook-invite-hidden-selection {
+    grid-column: auto;
+  }
+
+  .app-shell.app-frame .reserve-notice-preview-panel,
+  .app-shell.app-frame .outlook-invite-preview {
+    position: static;
+    max-height: none;
+  }
+
+  .workflow-blocker {
+    width: calc(100% - 24px);
+    min-height: 0;
+    margin: 18px auto;
+    padding: 30px 20px;
+  }
+
+  .workflow-blocker-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .time-analysis-mode-bar,
+  .time-analysis-mode-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .time-analysis-mode-tabs {
+    width: 100%;
+  }
+
+  .time-analysis-mode-tab {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 /* 统一三模块中的次级说明文字 */

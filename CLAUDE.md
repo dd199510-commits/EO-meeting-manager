@@ -1,7 +1,7 @@
 # 会议管理系统 — Claude Code 上下文
 
 项目根目录：`/Users/ddss/Documents/会议管理系统-pages-clean`
-当前版本：V4.0（UI 层重构中，逻辑层保持稳定）
+当前版本：V4.5（工作流体验、完整备份与 Codex Sites 适配完成，UI 层继续渐进重构）
 
 ## 样式架构（V5 设计系统）
 

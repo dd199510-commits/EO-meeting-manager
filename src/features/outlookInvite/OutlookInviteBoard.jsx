@@ -3,6 +3,7 @@ import { toast } from '../../components/Feedback'
 import { CalendarPlus, CheckSquare, Download, Search, Square, TriangleAlert } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
 import { buildOutlookInviteRows, downloadOutlookVbaScript, downloadOutlookVbsScript } from './outlookInviteUtils'
+import { WorkflowBlocker } from '../../components/WorkflowBlocker'
 
 function formatDateTime(row) {
   return `${row.date} ${row.startTime} - ${row.endTime}`
@@ -27,6 +28,7 @@ export function OutlookInviteBoard({
   selectedTaskId = '',
   onTaskChange,
   onExportDrafts,
+  onGoToPlanner,
 }) {
   const [selectedIds, setSelectedIds] = useState([])
   const [searchText, setSearchText] = useState('')
@@ -186,6 +188,25 @@ export function OutlookInviteBoard({
       downloadOutlookVbaScript(payload)
     }
     onExportDrafts?.(selectedRows.length, format)
+  }
+
+  if (taskOptions.length === 0 || schemeOptions.length === 0) {
+    const hasTask = taskOptions.length > 0
+    return (
+      <WorkflowBlocker
+        title={hasTask ? '当前任务还没有可生成的会邀方案' : '先采用排程方案，再生成正式会邀'}
+        description={hasTask
+          ? '当前任务还没有可用的已采用方案。完成排程审核后，系统会在这里检查邮箱并生成 Outlook 草稿脚本。'
+          : '会邀生成依赖已经审核采用的排程结果。先完成会议库和排程任务，避免生成空白或重复会邀。'}
+        steps={[
+          { label: '建立会议库', hint: '补齐参会人和邮箱信息', done: meetings.length > 0 },
+          { label: '创建排程任务', hint: '生成候选排程方案', done: taskOptions.length > 0 },
+          { label: '审核并采用方案', hint: '采用后解锁会邀生成', done: schemeOptions.length > 0 },
+        ]}
+        actionLabel="去排程中心"
+        onAction={onGoToPlanner}
+      />
+    )
   }
 
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import './App.css'
 import './styles/index.css'
 import { AppSidebar } from './components/AppSidebar'
@@ -17,12 +17,7 @@ import { LogsView } from './features/logs/LogsView'
 import { createLog, persistLogs, readLogs } from './features/logs/logUtils'
 import { MeetingsView } from './features/meetings/MeetingsView'
 import { EditModal } from './features/meetings/EditModal'
-import { PlanningWorkbench } from './features/planner/PlanningWorkbench'
-import { ReviewBoard } from './features/review/ReviewBoard'
-import { ReserveNoticeBoard } from './features/reserveNotice/ReserveNoticeBoard'
 import { normalizeNoticeTemplates } from './features/reserveNotice/notificationTemplates'
-import { OutlookInviteBoard } from './features/outlookInvite/OutlookInviteBoard'
-import { TimeAnalysisWorkbench } from './features/timeAnalysis'
 import {
   DEFAULT_REVIEW_STATE,
   normalizeReviewState,
@@ -35,12 +30,20 @@ import { detectConflicts } from './lib/conflicts'
 import { normalizeContact, resolveAttendeeRefs } from './lib/contacts'
 import { calculateNextOccurrence, syncMeetingAnchorDate } from './lib/meetingFrequency'
 import { persistStorage, readStorage } from './lib/storage'
+import { APP_VERSION_LABEL, BACKUP_SCHEMA_VERSION } from './lib/appVersion'
+import { readModuleBackupData, restoreModuleBackupData, saveRecoveryPoint } from './lib/backupData'
 import {
   DEFAULT_AI_STATE,
   normalizeAiState,
   persistAiState,
   readAiState,
 } from './features/aiScheduler/aiSchedulerUtils'
+
+const PlanningWorkbench = lazy(() => import('./features/planner/PlanningWorkbench').then((module) => ({ default: module.PlanningWorkbench })))
+const ReviewBoard = lazy(() => import('./features/review/ReviewBoard').then((module) => ({ default: module.ReviewBoard })))
+const ReserveNoticeBoard = lazy(() => import('./features/reserveNotice/ReserveNoticeBoard').then((module) => ({ default: module.ReserveNoticeBoard })))
+const OutlookInviteBoard = lazy(() => import('./features/outlookInvite/OutlookInviteBoard').then((module) => ({ default: module.OutlookInviteBoard })))
+const TimeAnalysisWorkbench = lazy(() => import('./features/timeAnalysis').then((module) => ({ default: module.TimeAnalysisWorkbench })))
 
 const PLANNING_TASKS_STORAGE_KEY = 'meeting-manager:planning-tasks:v1'
 const RESERVE_NOTICE_SCHEME_STATUS_KEY = 'meeting-manager:reserve-notice-scheme-status:v1'
@@ -189,6 +192,7 @@ function App() {
   const [editingMeeting, setEditingMeeting] = useState(null)
   const [isEditModalClosing, setIsEditModalClosing] = useState(false)
   const [showBatchImport, setShowBatchImport] = useState(false)
+  const [timeAnalysisRevision, setTimeAnalysisRevision] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => typeof window !== 'undefined' && window.localStorage.getItem('meeting-manager:ui:sidebar-collapsed:v1') === '1',
   )
@@ -700,14 +704,16 @@ function App() {
     ].join('')
   }
 
-  function handleExport() {
+  function buildSystemBackupPayload() {
     const exportedMeetings = meetings.map((meeting) => ({
       ...meeting,
       attendeeRefs: resolveAttendeeRefs(meeting.attendees, contacts),
       extraInviteeRefs: resolveAttendeeRefs(meeting.extraInvitees, contacts),
     }))
-    const exportPayload = {
-      version: 'V4.0',
+
+    return {
+      version: APP_VERSION_LABEL,
+      schemaVersion: BACKUP_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
       meetings: exportedMeetings,
       scheduled: scheduledMeetings,
@@ -719,7 +725,12 @@ function App() {
       reviewState,
       planningTasks,
       reserveNoticeSchemeStatus,
+      moduleData: readModuleBackupData(),
     }
+  }
+
+  function handleExport() {
+    const exportPayload = buildSystemBackupPayload()
 
     const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
       type: 'application/json',
@@ -730,7 +741,7 @@ function App() {
     link.download = `meeting-manager-export-${formatExportTimestamp()}.json`
     link.click()
     URL.revokeObjectURL(url)
-    toast('系统备份已导出')
+    toast('完整系统备份已导出（含时间分析与本地任务数据）')
   }
 
   function handleImportData() {
@@ -779,6 +790,8 @@ function App() {
 
         if (!overwriteConfirmed) return
 
+        const recoverySaved = saveRecoveryPoint(buildSystemBackupPayload())
+
         setMeetings(normalizedMeetings)
         setScheduledMeetings(Array.isArray(parsed.scheduled) ? parsed.scheduled : [])
         setContacts(importedContacts)
@@ -791,8 +804,10 @@ function App() {
         setReviewState(parsed.reviewState ? normalizeReviewState(parsed.reviewState) : DEFAULT_REVIEW_STATE)
         setPlanningTasks(Array.isArray(parsed.planningTasks) ? parsed.planningTasks.map(normalizePlanningTask) : [])
         setReserveNoticeSchemeStatus(normalizeReserveNoticeSchemeStatus(parsed.reserveNoticeSchemeStatus))
+        restoreModuleBackupData(parsed.moduleData)
+        setTimeAnalysisRevision((current) => current + 1)
         appendLog('import', '系统备份', `恢复系统备份，覆盖 ${normalizedMeetings.length} 条会议`)
-        toast(`系统备份恢复完成，共 ${normalizedMeetings.length} 条会议`)
+        toast(`系统备份恢复完成，共 ${normalizedMeetings.length} 条会议${recoverySaved ? '；恢复前快照已保留' : ''}`)
       } catch (error) {
         toast(`导入失败：${error.message}`, 'error')
       }
@@ -803,7 +818,7 @@ function App() {
 
   function handleExportReviewPlan() {
     const exportPayload = {
-      version: 'V4.0',
+      version: APP_VERSION_LABEL,
       exportedAt: new Date().toISOString(),
       reviewState,
     }
@@ -1017,6 +1032,10 @@ function App() {
         noticeTaskOptions={noticeTaskOptions}
         selectedTaskId={selectedNoticeTask?.id ?? ''}
         onTaskChange={setSelectedNoticeTaskId}
+        onGoToPlanner={() => {
+          setActiveTab('planner')
+          setPlanningTab('planner')
+        }}
         noticeTemplates={noticeTemplates}
         disabledNoticeTemplateKeys={disabledNoticeTemplateKeys}
         onUpdateMeeting={(meetingId, patch) => {
@@ -1199,6 +1218,10 @@ function App() {
         taskOptions={taskOptions}
         selectedTaskId={selectedOutlookTask?.id ?? ''}
         onTaskChange={setSelectedOutlookTaskId}
+        onGoToPlanner={() => {
+          setActiveTab('planner')
+          setPlanningTab('planner')
+        }}
         onExportDrafts={(count, format = 'vba') => {
           appendLog(
             'outlook_invite_export',
@@ -1226,6 +1249,7 @@ function App() {
       />
       <div className="app-main">
         <div className="app-page-content">
+          <Suspense fallback={<div className="route-loading"><span />正在打开工作区…</div>}>
           {activeTab === 'home' ? (
             <HomeView
               meetings={activeMeetings}
@@ -1319,7 +1343,7 @@ function App() {
           ) : activeTab === 'outlookInvite' ? (
             renderOutlookInviteBoard()
           ) : activeTab === 'timeAnalysis' ? (
-            <TimeAnalysisWorkbench />
+            <TimeAnalysisWorkbench key={`time-analysis-${timeAnalysisRevision}`} />
           ) : activeTab === 'contacts' ? (
             <ContactsView
               contacts={contacts}
@@ -1378,6 +1402,7 @@ function App() {
               onDelete={(id) => setLogs((current) => current.filter((log) => log.id !== id))}
             />
           )}
+          </Suspense>
         </div>
       </div>
 

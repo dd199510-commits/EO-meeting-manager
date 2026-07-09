@@ -1,8 +1,11 @@
 import {
   AlertTriangle,
+  ArrowRight,
   CheckSquare2,
+  CheckCircle2,
   CalendarCheck,
   CalendarClock,
+  Circle,
   Database,
   FileText,
   Mail,
@@ -12,7 +15,9 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react'
-import homeLogoSrc from '../../../public/home-eo-logo-cutout.png'
+import { APP_VERSION_LABEL } from '../../lib/appVersion'
+
+const homeLogoSrc = '/home-eo-logo-cutout.png'
 
 function isMeetingIncomplete(meeting) {
   const hasAttendees = String(meeting.attendees || '').trim() || meeting.attendeeRefs?.length > 0
@@ -68,6 +73,28 @@ function HomeListItem({ label, value, tone = 'default', actionLabel, onClick }) 
   )
 }
 
+function WorkflowStep({ label, hint, state, onClick }) {
+  const stateLabel = state === 'done' ? '已完成' : state === 'current' ? '进行中' : '待开始'
+
+  return (
+    <button
+      className={`hv-flow-step hv-flow-step-${state}`}
+      type="button"
+      onClick={onClick}
+      disabled={!onClick || state === 'locked'}
+      aria-label={`${label}，${stateLabel}`}
+    >
+      <span className="hv-flow-step-icon" aria-hidden="true">
+        {state === 'done' ? <CheckCircle2 /> : <Circle />}
+      </span>
+      <span className="hv-flow-step-copy">
+        <strong>{label}</strong>
+        <em>{hint}</em>
+      </span>
+    </button>
+  )
+}
+
 export function HomeView({
   meetings = [],
   contacts = [],
@@ -90,6 +117,10 @@ export function HomeView({
   const pendingPlanningTasks = planningTasks.filter((task) => !task.reviewState?.scheduledMeetings?.length && task.status !== 'scheduled')
   const scheduledMeetingCount = scheduledTasks.reduce(
     (total, task) => total + Number(task.reviewState?.scheduledMeetings?.length ?? task.scheduledCount ?? 0),
+    0,
+  )
+  const reservedMeetingCount = scheduledTasks.reduce(
+    (total, task) => total + (task.reviewState?.scheduledMeetings ?? []).filter((meeting) => meeting.reserved).length,
     0,
   )
   const recentLogs = logs.slice(0, 4)
@@ -187,6 +218,40 @@ export function HomeView({
       : null,
   ].filter(Boolean)
 
+  const workflowSteps = [
+    {
+      label: '建立会议库',
+      hint: meetings.length > 0 ? `${meetings.length} 条会议资料` : '录入会议与参会人',
+      state: meetings.length > 0 ? 'done' : 'current',
+      onClick: onGoToMeetings,
+    },
+    {
+      label: '创建排程任务',
+      hint: planningTasks.length > 0 ? `${planningTasks.length} 个任务` : '确定排程时间范围',
+      state: planningTasks.length > 0 ? 'done' : meetings.length > 0 ? 'current' : 'locked',
+      onClick: meetings.length > 0 ? onGoToPlanner : null,
+    },
+    {
+      label: '审核采用方案',
+      hint: scheduledTasks.length > 0 ? `${scheduledTasks.length} 个已采用` : '生成并确认候选方案',
+      state: scheduledTasks.length > 0 ? 'done' : planningTasks.length > 0 ? 'current' : 'locked',
+      onClick: planningTasks.length > 0 ? onGoToPlanner : null,
+    },
+    {
+      label: '发送预留通知',
+      hint: reservedMeetingCount > 0 ? `${reservedMeetingCount} 场已预留` : '通知相关人员预留时间',
+      state: reservedMeetingCount > 0 ? 'done' : scheduledTasks.length > 0 ? 'current' : 'locked',
+      onClick: scheduledTasks.length > 0 ? onGoToReserveNotice : null,
+    },
+    {
+      label: '生成正式会邀',
+      hint: scheduledMeetingCount > 0 ? `${scheduledMeetingCount} 场可检查` : '生成 Outlook 草稿',
+      state: reservedMeetingCount > 0 ? 'current' : 'locked',
+      onClick: scheduledTasks.length > 0 ? onGoToOutlookInvite : null,
+    },
+  ]
+  const currentWorkflowStep = workflowSteps.find((step) => step.state === 'current') ?? workflowSteps.at(-1)
+
   return (
     <section className="hv-workspace" aria-label="会议运营首页">
       <section className="hv-hero" aria-label="首页总览">
@@ -227,7 +292,7 @@ export function HomeView({
         <aside className="hv-status" aria-label="运营总览">
           <div className="hv-status-head">
             <strong>运营总览</strong>
-            <em>V4.0</em>
+            <em>{APP_VERSION_LABEL}</em>
           </div>
           <div className="hv-status-grid">
             <div className="hv-status-cell hv-status-cell-accent">
@@ -257,6 +322,24 @@ export function HomeView({
           hint={`${reviewConflicts.length} 个冲突`}
           tone={riskCount > 0 ? 'danger' : 'default'}
         />
+      </section>
+
+      <section className="nx-card hv-flow" aria-label="会议运营流程">
+        <div className="hv-flow-head">
+          <div>
+            <span>会议运营流程</span>
+            <strong>{currentWorkflowStep?.label ?? '流程已完成'}</strong>
+          </div>
+          {currentWorkflowStep?.onClick ? (
+            <button className="nx-btn nx-btn-outline" type="button" onClick={currentWorkflowStep.onClick}>
+              继续处理
+              <ArrowRight aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+        <div className="hv-flow-steps">
+          {workflowSteps.map((step) => <WorkflowStep key={step.label} {...step} />)}
+        </div>
       </section>
 
       <div className="hv-grid">
