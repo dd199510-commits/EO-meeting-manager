@@ -18,6 +18,13 @@
   --nx-line-strong: #cbd5e1;
   --nx-divider: #eef2f6;
 
+  /* 工作区层级：控制面 / 主画布 / 参考信息 */
+  --nx-surface-control: #eef2f4;
+  --nx-surface-work: #ffffff;
+  --nx-surface-context: #f3f6f7;
+  --nx-surface-selected: #e8f7f4;
+  --nx-line-work: #d4dde4;
+
   /* 品牌主色（teal）*/
   --nx-accent: #0f948e;
   --nx-accent-strong: #0b7a75;

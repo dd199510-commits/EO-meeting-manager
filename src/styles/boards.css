@@ -578,3 +578,67 @@
 .time-analysis-panel-head span {
   color: var(--nx-muted);
 }
+
+/* ---- V4.6 去卡片化：配置区、列表区、成品预览各自成面 ---- */
+.app-shell.app-frame .outlook-invite-shell,
+.app-shell.app-frame .reserve-notice-shell {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .reserve-notice-topbar,
+.app-shell.app-frame .outlook-invite-topbar,
+.app-shell.app-frame .outlook-invite-actions {
+  border: 0;
+  background: var(--nx-surface-control);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .reserve-notice-list-panel,
+.app-shell.app-frame .outlook-invite-list {
+  border: 0;
+  background: var(--nx-surface-context);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .reserve-notice-preview-panel,
+.app-shell.app-frame .outlook-invite-preview {
+  border: 1px solid var(--nx-line-work);
+  background: var(--nx-surface-work);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.app-shell.app-frame .reserve-notice-item,
+.app-shell.app-frame .outlook-invite-item-main {
+  border: 0;
+  border-bottom: 1px solid var(--nx-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .reserve-notice-item-active,
+.app-shell.app-frame .reserve-notice-item-active:hover,
+.app-shell.app-frame .outlook-invite-item-active .outlook-invite-item-main {
+  background: var(--nx-surface-selected);
+  box-shadow: inset 3px 0 0 var(--nx-accent);
+}
+
+.app-shell.app-frame .outlook-invite-preview-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .outlook-invite-preview-card + .outlook-invite-preview-card {
+  border-top: 1px solid var(--nx-divider);
+}
+
+.app-shell.app-frame .outlook-invite-preview-card-warning {
+  margin-top: 8px;
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-warn-soft);
+}

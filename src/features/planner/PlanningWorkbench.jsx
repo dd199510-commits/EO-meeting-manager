@@ -1563,9 +1563,48 @@ export function PlanningWorkbench({
   }
 
   const currentPlanningTask = planningTasks.find((task) => task.id === currentPlanningTaskId) ?? null
+  const latestCompletedScheme = taskQueue.find((job) => job.status === 'completed') ?? null
+  const canOpenAiStep = hasGeneratedPlan && !isGeneratedPlanStale
+  const canOpenReviewStep = Boolean(
+    hasImportedSchedule ||
+    currentPlanningTask?.status === 'scheduled' ||
+    currentPlanningTask?.reviewState?.scheduledMeetings?.length,
+  )
+  const workflowSteps = [
+    {
+      key: 'prepare',
+      index: '1',
+      label: '准备清单',
+      hint: '范围与规则',
+      available: true,
+      completed: hasGeneratedPlan,
+    },
+    {
+      key: 'ai',
+      index: '2',
+      label: '生成方案',
+      hint: 'AI 候选方案',
+      available: canOpenAiStep || activeWorkflowStep === 'ai' || canOpenReviewStep,
+      completed: Boolean(latestCompletedScheme || canOpenReviewStep),
+    },
+    {
+      key: 'review',
+      index: '3',
+      label: '调整确认',
+      hint: '日历与冲突',
+      available: canOpenReviewStep || activeWorkflowStep === 'review',
+      completed: currentPlanningTask?.status === 'scheduled',
+    },
+  ]
 
   return (
-    <div className={activeWorkflowStep === 'review' ? 'planner-generation-page planner-step-review' : 'planner-generation-page'}>
+    <div
+      className={[
+        'planner-generation-page',
+        `planner-workflow-${activeWorkflowStep}`,
+        activeWorkflowStep === 'review' ? 'planner-step-review' : '',
+      ].filter(Boolean).join(' ')}
+    >
       <section className="panel planner-task-workflow-head">
         <div className="planner-task-title">
           <div className="planner-breadcrumb">
@@ -1612,35 +1651,52 @@ export function PlanningWorkbench({
           </p>
         </div>
         <div className="planner-task-workflow-actions">
-          {activeWorkflowStep !== 'ai' ? (
+          <div className="planner-task-stepper" role="tablist" aria-label="排程任务步骤">
+            {workflowSteps.map((step) => {
+              const className = [
+                'planner-task-step',
+                activeWorkflowStep === step.key ? 'planner-task-step-active' : '',
+                step.completed ? 'planner-task-step-complete' : '',
+                !step.available ? 'planner-task-step-locked' : '',
+              ].filter(Boolean).join(' ')
+
+              return (
+                <button
+                  key={step.key}
+                  type="button"
+                  className={className}
+                  onClick={() => setActiveWorkflowStep(step.key)}
+                  role="tab"
+                  aria-selected={activeWorkflowStep === step.key}
+                  disabled={!step.available}
+                >
+                  <span>{step.completed ? <Check size={12} /> : step.index}</span>
+                  <span className="planner-task-step-copy">
+                    <strong>{step.label}</strong>
+                    <small>{step.hint}</small>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {activeWorkflowStep === 'prepare' && canOpenAiStep ? (
             <button
               type="button"
               className="primary-button planner-workflow-primary"
               onClick={() => setActiveWorkflowStep('ai')}
-              disabled={!hasGeneratedPlan}
             >
-              进入生成方案
+              继续生成方案
             </button>
           ) : null}
-          <div className="planner-task-stepper" role="tablist" aria-label="排程任务步骤">
-            {[
-              ['prepare', '1', '准备清单'],
-              ['ai', '2', '生成方案'],
-              ['review', '3', '调整与采用'],
-            ].map(([key, index, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={activeWorkflowStep === key ? 'planner-task-step planner-task-step-active' : 'planner-task-step'}
-                onClick={() => setActiveWorkflowStep(key)}
-                role="tab"
-                aria-selected={activeWorkflowStep === key}
-              >
-                <span>{index}</span>
-                <strong>{label}</strong>
-              </button>
-            ))}
-          </div>
+          {activeWorkflowStep === 'ai' && latestCompletedScheme ? (
+            <button
+              type="button"
+              className="primary-button planner-workflow-primary"
+              onClick={() => importJobResult(latestCompletedScheme, { importToReview: true, markImported: true })}
+            >
+              采用最新方案
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -1648,7 +1704,7 @@ export function PlanningWorkbench({
         <div className="planner-task-main">
       {activeWorkflowStep === 'prepare' ? (
       <div className="planner-prepare-workspace">
-      <section className="panel planner-step-card planner-step-card-range">
+      <section className="panel planner-step-card planner-step-card-range planner-control-surface">
         <div className="planner-step-card-head">
           <strong>清单准备</strong>
           <h2>范围与生成</h2>
@@ -1864,7 +1920,7 @@ export function PlanningWorkbench({
         </div>
       </section>
 
-      <section className="panel planner-step-card planner-step-card-preview">
+      <section className="panel planner-step-card planner-step-card-preview planner-work-surface">
         <div className="planner-step-card-head planner-step-card-head-row">
           <div>
             <strong>清单准备</strong>
@@ -1965,7 +2021,8 @@ export function PlanningWorkbench({
       ) : null}
 
       {activeWorkflowStep === 'ai' ? (
-      <aside className="panel planner-step-card planner-step-card-ai">
+      <aside className="panel planner-step-card planner-step-card-ai planner-ai-workspace">
+        <div className="planner-ai-control-surface">
         <div className="planner-step-card-head">
           <strong>步骤 2</strong>
           <h2>AI 排程</h2>
@@ -2021,6 +2078,7 @@ export function PlanningWorkbench({
         {configError ? <p className="error-text">{configError}</p> : null}
         {submitError ? <p className="error-text">{submitError}</p> : null}
         {isGeneratedPlanStale ? <div className="info-note warning-note-inline">清单已过期，请更新</div> : null}
+        </div>
 
         <div className="planner-task-section">
           <div className="planner-task-section-head">
@@ -2122,7 +2180,7 @@ export function PlanningWorkbench({
       ) : null}
 
       {activeWorkflowStep === 'review' ? (
-      <section className="panel planner-step-card planner-review-step-card">
+      <section className="panel planner-step-card planner-review-step-card planner-work-surface">
         {typeof renderReviewBoard === 'function' ? (
           <div className="planner-review-step-board">
             {renderReviewBoard(() => setActiveWorkflowStep('prepare'))}

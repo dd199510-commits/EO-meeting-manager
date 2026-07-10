@@ -17,6 +17,7 @@ import { appendAttendeeNames, removeAttendeeNames } from '../../lib/contacts'
 export function EditModal({ meeting, meetings = [], contacts = [], open, isClosing = false, onClose, onSave, onAddContact }) {
   const [formData, setFormData] = useState(meeting)
   const [historyInput, setHistoryInput] = useState('')
+  const [historyError, setHistoryError] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const frequencyType = formData ? getMeetingFrequencyType(formData) : 'weekly'
   const historyGroups = formData ? groupMeetingHistory(formData) : []
@@ -25,11 +26,30 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
     : [formData?.frequency?.monthSpec || 1]
 
   function addHistoryDates() {
-    const dates = historyInput
+    const inputDates = historyInput
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-      .filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item))
+    const today = new Date()
+    const todayValue = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0'),
+    ].join('-')
+    const invalidDates = inputDates.filter((item) => !/^\d{4}-\d{2}-\d{2}$/.test(item))
+    const futureDates = inputDates.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && item > todayValue)
+    const dates = inputDates.filter(
+      (item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && item <= todayValue,
+    )
+
+    if (invalidDates.length > 0 || futureDates.length > 0) {
+      const messages = []
+      if (invalidDates.length > 0) messages.push(`日期格式不正确：${invalidDates.join('、')}`)
+      if (futureDates.length > 0) messages.push(`未来日期不能作为历史记录：${futureDates.join('、')}`)
+      setHistoryError(messages.join('；'))
+    } else {
+      setHistoryError('')
+    }
 
     if (dates.length === 0) return
 
@@ -300,7 +320,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
               {frequencyType !== 'adhoc' ? (
                 <div className="rule-helper-row">
                   <label className="field inline-mini-field">
-                    <span>锚点日期</span>
+                    <span>起始参考日</span>
                     <input
                       type="date"
                       value={formData.frequency?.anchorDate || ''}
@@ -309,7 +329,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                       }
                     />
                   </label>
-                  <span className="rule-helper-text">可以理解为“这条周期从哪一次开始算”。它用于推算后续日期，不会改变你上面选择的周几、几号或月份规则。</span>
+                  <span className="rule-helper-text">没有历史记录时从这里起算；有历史记录后，只按最近一次实际日期所在的周或月继续排期。</span>
                 </div>
               ) : null}
 
@@ -388,13 +408,17 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                 <div className="inline-history-row">
                   <input
                     value={historyInput}
-                    onChange={(event) => setHistoryInput(event.target.value)}
+                    onChange={(event) => {
+                      setHistoryInput(event.target.value)
+                      setHistoryError('')
+                    }}
                     placeholder="输入日期，逗号分隔：2026-03-01, 2026-03-08"
                   />
                   <button className="ghost-button" onClick={addHistoryDates}>
                     添加历史
                   </button>
                 </div>
+                {historyError ? <div className="warning-text rule-warning-text">{historyError}</div> : null}
                 <div className="inline-history-list">
                   {(formData.history ?? []).length === 0 ? <div className="empty-state">暂无历史记录</div> : null}
                   {historyGroups.map((group) => (

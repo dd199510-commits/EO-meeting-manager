@@ -680,3 +680,51 @@
     max-height: 60vh;
   }
 }
+
+/* ---- V4.6 工作台层级：导航 / 主列表 / 参考详情 ---- */
+.app-shell.app-frame .mv-nav {
+  border: 0;
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-control);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .mv-list-panel {
+  border: 1px solid var(--nx-line-work);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-work);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.055);
+}
+
+.app-shell.app-frame .mv-inspector {
+  border: 0;
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-context);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .mv-inspector-head {
+  border-bottom-color: rgba(100, 116, 139, 0.14);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.app-shell.app-frame .mv-inspector-metrics {
+  gap: 0;
+  padding: 8px 0;
+  border-block: 1px solid rgba(100, 116, 139, 0.12);
+}
+
+.app-shell.app-frame .mv-inspector-metrics > div {
+  border-radius: 0;
+  background: transparent;
+}
+
+.app-shell.app-frame .mv-inspector-metrics > div + div {
+  border-left: 1px solid rgba(100, 116, 139, 0.14);
+}
+
+.app-shell.app-frame .mv-row-selected,
+.app-shell.app-frame .mv-row-selected:hover {
+  background: var(--nx-surface-selected);
+  box-shadow: inset 3px 0 0 var(--nx-accent);
+}

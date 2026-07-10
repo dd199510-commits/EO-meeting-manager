@@ -677,3 +677,241 @@
 .planner-step-review .review-empty-state {
   align-self: start;
 }
+
+/* =============================================
+   V4.6 排程工作流：顺序、完成态与工作表面分层
+   ============================================= */
+.app-shell.app-frame.app-frame-planner .planner-task-workflow-head.panel {
+  grid-template-columns: minmax(220px, 0.72fr) minmax(560px, 1.28fr);
+  gap: 22px;
+  padding-bottom: 14px;
+}
+
+.app-shell.app-frame .planner-task-workflow-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.app-shell.app-frame .planner-task-stepper {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(132px, 1fr));
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.app-shell.app-frame .planner-task-step {
+  position: relative;
+  justify-content: flex-start;
+  min-height: 48px;
+  padding: 6px 20px 6px 10px;
+  border: 0;
+  border-bottom: 2px solid var(--nx-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--nx-muted);
+}
+
+.app-shell.app-frame .planner-task-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--nx-line-strong);
+  border-right: 1px solid var(--nx-line-strong);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.app-shell.app-frame .planner-task-step > span:first-child {
+  width: 24px;
+  height: 24px;
+  background: #dbe2e7;
+  color: #64748b;
+}
+
+.app-shell.app-frame .planner-task-step > .planner-task-step-copy {
+  display: grid;
+  gap: 1px;
+  width: auto;
+  height: auto;
+  place-items: initial;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.app-shell.app-frame .planner-task-step > .planner-task-step-copy strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.app-shell.app-frame .planner-task-step > .planner-task-step-copy small {
+  color: var(--nx-soft);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-shell.app-frame .planner-task-step-active {
+  border-bottom-color: var(--nx-accent);
+  background: linear-gradient(180deg, rgba(232, 247, 244, 0) 0%, rgba(232, 247, 244, 0.72) 100%);
+  color: var(--nx-accent-strong);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .planner-task-step-active > span:first-child {
+  background: var(--nx-accent);
+  color: #ffffff;
+}
+
+.app-shell.app-frame .planner-task-step-complete:not(.planner-task-step-active) {
+  border-bottom-color: rgba(15, 148, 142, 0.34);
+  color: #33756f;
+}
+
+.app-shell.app-frame .planner-task-step-complete:not(.planner-task-step-active) > span:first-child {
+  background: #d7f2ec;
+  color: var(--nx-accent-strong);
+}
+
+.app-shell.app-frame .planner-task-step-locked {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.app-shell.app-frame .planner-control-surface.panel {
+  border: 0;
+  background: var(--nx-surface-control);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .planner-work-surface.panel {
+  border: 1px solid var(--nx-line-work);
+  background: var(--nx-surface-work);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-range-fields,
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-rule-list,
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-status-table > div {
+  border: 0;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-range-fields {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-rule-list {
+  border-top: 1px solid rgba(100, 116, 139, 0.14);
+  border-radius: 0;
+  background: transparent;
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-rule-item {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-control-surface .planner-rule-item + .planner-rule-item {
+  border-top: 1px solid rgba(100, 116, 139, 0.12);
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-preview-summary-strip .planner-count-grid {
+  gap: 0;
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-preview-summary-strip .planner-count-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .planner-prepare-workspace .planner-preview-summary-strip .planner-count-card + .planner-count-card {
+  border-left: 1px solid var(--nx-divider);
+}
+
+.app-shell.app-frame .planner-ai-workspace.panel {
+  display: grid;
+  grid-template-columns: minmax(270px, 0.42fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .planner-ai-control-surface {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-control);
+}
+
+.app-shell.app-frame .planner-ai-workspace .planner-task-section {
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--nx-line-work);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-work);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.055);
+}
+
+.app-shell.app-frame .planner-ai-workspace .planner-scheme-chip {
+  border: 0;
+  border-bottom: 1px solid var(--nx-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.app-frame .planner-ai-workspace .planner-scheme-chip:hover {
+  border-bottom-color: var(--nx-divider);
+  background: var(--nx-panel-soft);
+  box-shadow: inset 3px 0 0 var(--nx-accent);
+}
+
+@media (max-width: 1180px) {
+  .app-shell.app-frame.app-frame-planner .planner-task-workflow-head.panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .app-shell.app-frame .planner-task-workflow-actions {
+    justify-content: stretch;
+  }
+
+  .app-shell.app-frame .planner-ai-workspace.panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell.app-frame .planner-task-workflow-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-shell.app-frame .planner-task-stepper {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell.app-frame .planner-task-step:not(:last-child)::after {
+    display: none;
+  }
+}

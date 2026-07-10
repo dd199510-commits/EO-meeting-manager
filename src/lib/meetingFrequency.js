@@ -1,4 +1,4 @@
-import { formatDate, addWeeks, addMonths, addYears } from './date'
+import { formatDate, addWeeks, addYears } from './date'
 import { getMeetingFrequencyType, normalizeMeeting } from '../data/meetingData'
 
 export function parseDateInput(value) {
@@ -53,10 +53,14 @@ function buildYearlyCandidate(year, month, daySpec) {
   return candidate
 }
 
-function getYearlyOccurrences(frequency, rangeStart, rangeEnd, anchorDate) {
-  const months = [...new Set(Array.isArray(frequency.monthSpec) ? frequency.monthSpec : [frequency.monthSpec || 1])]
+function getYearlyMonths(frequency) {
+  return [...new Set(Array.isArray(frequency.monthSpec) ? frequency.monthSpec : [frequency.monthSpec || 1])]
     .filter((month) => Number.isInteger(month) && month >= 1 && month <= 12)
     .sort((a, b) => a - b)
+}
+
+function getYearlyOccurrences(frequency, rangeStart, rangeEnd, anchorDate) {
+  const months = getYearlyMonths(frequency)
 
   const anchor = parseDateInput(anchorDate)
   const start = parseDateInput(rangeStart)
@@ -89,21 +93,170 @@ function getYearlyOccurrences(frequency, rangeStart, rangeEnd, anchorDate) {
   return instances
 }
 
+function resolveYearlyOccurrencePeriod(frequency, occurrenceDate) {
+  const occurrence = parseDateInput(occurrenceDate)
+  const months = getYearlyMonths(frequency)
+  if (!occurrence || months.length === 0) return null
+
+  const occurrenceMonth = occurrence.getMonth() + 1
+  if (months.includes(occurrenceMonth)) {
+    return buildYearlyCandidate(occurrence.getFullYear(), occurrenceMonth, frequency.daySpec)
+  }
+
+  const candidates = []
+  for (let yearOffset = -1; yearOffset <= 1; yearOffset += 1) {
+    months.forEach((month) => {
+      candidates.push(buildYearlyCandidate(occurrence.getFullYear() + yearOffset, month, frequency.daySpec))
+    })
+  }
+
+  const nearestCandidate = candidates.sort((left, right) => {
+    const distanceDiff = Math.abs(left - occurrence) - Math.abs(right - occurrence)
+    if (distanceDiff !== 0) return distanceDiff
+
+    const leftIsFuture = left >= occurrence
+    const rightIsFuture = right >= occurrence
+    if (leftIsFuture !== rightIsFuture) return leftIsFuture ? -1 : 1
+    return left - right
+  })[0] ?? null
+
+  const maximumAttributionDistance = 31 * 24 * 60 * 60 * 1000
+  return nearestCandidate && Math.abs(nearestCandidate - occurrence) <= maximumAttributionDistance
+    ? nearestCandidate
+    : null
+}
+
+function getYearlyOccurrencesAfterCompletion(frequency, occurrenceDate, rangeStart, rangeEnd) {
+  const completedPeriod = resolveYearlyOccurrencePeriod(frequency, occurrenceDate)
+  const months = getYearlyMonths(frequency)
+  const start = parseDateInput(rangeStart)
+  const end = parseDateInput(rangeEnd)
+  const interval = Math.max(1, Number(frequency.interval) || 1)
+  const instances = []
+
+  if (!completedPeriod) return null
+  if (!start || !end || months.length === 0) return instances
+
+  let year = completedPeriod.getFullYear()
+  let guard = 0
+
+  while (year <= end.getFullYear() && guard < 500) {
+    guard += 1
+    months.forEach((month) => {
+      const candidate = buildYearlyCandidate(year, month, frequency.daySpec)
+      if (candidate <= completedPeriod || candidate < start || candidate > end) return
+      instances.push(formatDate(candidate))
+    })
+    year += interval
+  }
+
+  return instances
+}
+
+function resolveOccurrencePeriod(frequency, occurrenceDate) {
+  const occurrence = parseDateInput(occurrenceDate)
+  if (!occurrence) return null
+
+  if (frequency.type === 'weekly') {
+    // 最近一次实际日期归属于它所在的自然周（周一至周日）。
+    // 即使周三的会提前到周二，本周也视为已经完成。
+    return setWeekday(occurrence, frequency.daySpec)
+  }
+
+  if (frequency.type === 'monthly') {
+    // 最近一次实际日期归属于它所在的自然月。
+    // 即使每月 7 日的会提前到 4 日，本月也视为已经完成。
+    const monthStart = new Date(occurrence.getFullYear(), occurrence.getMonth(), 1)
+    return setSafeDayOfMonth(monthStart, frequency.daySpec)
+  }
+
+  return occurrence
+}
+
+function addCadencePeriods(date, frequency, count) {
+  const interval = Math.max(1, Number(frequency.interval) || 1) * count
+  if (frequency.type === 'weekly') return addWeeks(date, interval)
+  if (frequency.type === 'monthly') {
+    const targetMonth = new Date(date.getFullYear(), date.getMonth() + interval, 1)
+    return setSafeDayOfMonth(targetMonth, frequency.daySpec)
+  }
+  return addYears(date, interval)
+}
+
+function getLatestDate(values) {
+  return values
+    .map(parseDateInput)
+    .filter(Boolean)
+    .sort((left, right) => right - left)[0] ?? null
+}
+
+function getFollowingCadenceOccurrences(frequency, occurrenceDate, throughDate) {
+  const completedPeriod = resolveOccurrencePeriod(frequency, occurrenceDate)
+  const end = parseDateInput(throughDate)
+  if (!completedPeriod || !end) return []
+
+  const occurrences = []
+  let candidate = addCadencePeriods(completedPeriod, frequency, 1)
+  let guard = 0
+
+  while (candidate <= end && guard < 500) {
+    occurrences.push(formatDate(candidate))
+    candidate = addCadencePeriods(candidate, frequency, 1)
+    guard += 1
+  }
+
+  return occurrences
+}
+
+function getInitialCadenceOccurrences(frequency, anchorDate, throughDate) {
+  const anchor = parseDateInput(anchorDate)
+  const end = parseDateInput(throughDate)
+  let candidate = resolveOccurrencePeriod(frequency, anchor)
+  if (!anchor || !end || !candidate) return []
+
+  const occurrences = []
+  let guard = 0
+
+  while (candidate < anchor && guard < 500) {
+    candidate = addCadencePeriods(candidate, frequency, 1)
+    guard += 1
+  }
+
+  while (candidate <= end && guard < 500) {
+    occurrences.push(formatDate(candidate))
+    candidate = addCadencePeriods(candidate, frequency, 1)
+    guard += 1
+  }
+
+  return occurrences
+}
+
+function getLatestHistoryDate(meeting, cutoffDate) {
+  const cutoff = parseDateInput(cutoffDate)
+  const history = Array.isArray(meeting.history) ? meeting.history : []
+  return getLatestDate(history.filter((value) => {
+    const date = parseDateInput(value)
+    return date && (!cutoff || date <= cutoff)
+  }))
+}
+
 export function syncMeetingAnchorDate(meeting) {
   const normalized = normalizeMeeting(meeting)
-  const history = normalized.history ?? []
-  const lastHistoryDate = history.length > 0 ? history[history.length - 1] : null
+  const history = [...(normalized.history ?? [])].filter((value) => parseDateInput(value)).sort()
+  const firstHistoryDate = history[0] ?? null
 
-  if (!lastHistoryDate || getMeetingFrequencyType(normalized) === 'adhoc') {
+  if (getMeetingFrequencyType(normalized) === 'adhoc') {
     return normalized
   }
 
-  if (!normalized.frequency.anchorDate || normalized.frequency.anchorDate < lastHistoryDate) {
+  // 兼容旧数据：频率计算有历史记录时只使用最近一次实际日期；
+  // anchorDate 仅在没有历史记录时作为起始参考日。
+  if (!normalized.frequency.anchorDate && firstHistoryDate) {
     return {
       ...normalized,
       frequency: {
         ...normalized.frequency,
-        anchorDate: lastHistoryDate,
+        anchorDate: firstHistoryDate,
       },
     }
   }
@@ -122,63 +275,33 @@ export function calculateNextOccurrence(meeting, referenceDate = new Date()) {
   }
 
   const todayDate = parseDateInput(today)
+  const latestHistoryDate = getLatestHistoryDate(normalized, todayDate)
 
   if (type === 'yearly') {
-    const candidates = []
     const searchEnd = addYears(todayDate, Math.max(interval, 1) * 5)
-
-    getYearlyOccurrences(
+    const initialOccurrences = () => getYearlyOccurrences(
       { interval, monthSpec, daySpec },
       today,
       formatDate(searchEnd),
       anchorDate,
-    ).forEach((date) => {
-      if (date !== anchorDate) {
-        candidates.push(parseDateInput(date))
-      }
-    })
+    )
+    const candidates = latestHistoryDate
+      ? getYearlyOccurrencesAfterCompletion(frequency, latestHistoryDate, today, formatDate(searchEnd))
+        ?? initialOccurrences()
+      : initialOccurrences()
 
-    if (candidates.length === 0) {
-      return null
-    }
-
-    candidates.sort((a, b) => a - b)
-    return formatDate(candidates[0])
+    return candidates[0] ?? null
   }
 
-  let current = parseDateInput(anchorDate)
-  let guard = 0
-  let firstIteration = true
+  const cadenceReference = latestHistoryDate ?? parseDateInput(anchorDate)
+  if (!cadenceReference) return normalized.nextDate || null
 
-  while (guard < 500) {
-    guard += 1
+  const searchEnd = addCadencePeriods(getLatestDate([todayDate, cadenceReference]), frequency, 8)
+  const occurrences = latestHistoryDate
+    ? getFollowingCadenceOccurrences(frequency, latestHistoryDate, searchEnd)
+    : getInitialCadenceOccurrences(frequency, anchorDate, searchEnd)
 
-    let candidate = parseDateInput(current)
-    if (type === 'weekly') {
-      candidate = setWeekday(candidate, daySpec)
-    } else if (type === 'monthly') {
-      candidate = setSafeDayOfMonth(candidate, daySpec)
-    }
-
-    if (firstIteration && isBefore(candidate, anchorDate)) {
-      current = type === 'weekly' ? addWeeks(current, interval) : addMonths(current, interval)
-      firstIteration = false
-      continue
-    }
-
-    firstIteration = false
-    const candidateString = formatDate(candidate)
-
-    if (!(candidate < todayDate)) {
-      if (candidateString !== anchorDate) {
-        return candidateString
-      }
-    }
-
-    current = type === 'weekly' ? addWeeks(current, interval) : addMonths(current, interval)
-  }
-
-  return null
+  return occurrences.find((candidate) => candidate >= today) ?? null
 }
 
 export function formatNextDateInfo(dateValue, referenceDate = new Date()) {
@@ -215,7 +338,7 @@ export function formatNextDateInfo(dateValue, referenceDate = new Date()) {
   }
 }
 
-export function generateOccurrencesInRange(meeting, startDate, endDate) {
+export function generateOccurrencesInRange(meeting, startDate, endDate, referenceDate = new Date()) {
   const normalized = syncMeetingAnchorDate(meeting)
   const frequency = normalized.frequency
   const type = frequency.type
@@ -226,44 +349,28 @@ export function generateOccurrencesInRange(meeting, startDate, endDate) {
 
   const start = parseDateInput(startDate)
   const end = parseDateInput(endDate)
-  const instances = []
+  const latestHistoryDate = getLatestHistoryDate(normalized, referenceDate)
 
   if (type === 'yearly') {
-    return [...new Set(getYearlyOccurrences(frequency, start, end, frequency.anchorDate))].sort()
+    const initialOccurrences = () => getYearlyOccurrences(frequency, start, end, frequency.anchorDate)
+    const occurrences = latestHistoryDate
+      ? getYearlyOccurrencesAfterCompletion(frequency, latestHistoryDate, start, end)
+        ?? initialOccurrences()
+      : initialOccurrences()
+    return [...new Set(occurrences)].sort()
   }
 
-  let current = parseDateInput(frequency.anchorDate)
-  let guard = 0
-  let firstIteration = true
+  const cadenceReference = latestHistoryDate ?? parseDateInput(frequency.anchorDate)
+  if (!cadenceReference) return []
 
-  while (guard < 500) {
-    guard += 1
+  const searchEnd = addCadencePeriods(end, frequency, 2)
+  const occurrences = latestHistoryDate
+    ? getFollowingCadenceOccurrences(frequency, latestHistoryDate, searchEnd)
+    : getInitialCadenceOccurrences(frequency, frequency.anchorDate, searchEnd)
 
-    let candidate = parseDateInput(current)
-    if (type === 'weekly') {
-      candidate = setWeekday(candidate, frequency.daySpec)
-    } else if (type === 'monthly') {
-      candidate = setSafeDayOfMonth(candidate, frequency.daySpec)
-    }
-
-    if (firstIteration && isBefore(candidate, frequency.anchorDate)) {
-      current = type === 'weekly' ? addWeeks(current, frequency.interval) : addMonths(current, frequency.interval)
-      firstIteration = false
-      continue
-    }
-
-    firstIteration = false
-
-    if (isAfter(candidate, end)) {
-      break
-    }
-
-    if (!isBefore(candidate, start) && !isAfter(candidate, end)) {
-      instances.push(formatDate(candidate))
-    }
-
-    current = type === 'weekly' ? addWeeks(current, frequency.interval) : addMonths(current, frequency.interval)
-  }
-
-  return instances
+  return occurrences.filter(
+    (candidate) =>
+      !isBefore(candidate, start) &&
+      !isAfter(candidate, end),
+  )
 }

@@ -399,3 +399,24 @@
   min-height: 30px;
   font-size: var(--nx-fs-caption);
 }
+
+/* ---- 主列表保持白色，编辑/详情区退为辅助表面 ---- */
+.app-shell.app-frame .cv-list-panel,
+.app-shell.app-frame .lv-panel {
+  border: 1px solid var(--nx-line-work);
+  background: var(--nx-surface-work);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.app-shell.app-frame .cv-editor-panel,
+.app-shell.app-frame .fp-panel {
+  border: 0;
+  background: var(--nx-surface-context);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .cv-row-active,
+.app-shell.app-frame .cv-row-active:hover {
+  background: var(--nx-surface-selected);
+  box-shadow: inset 3px 0 0 var(--nx-accent);
+}

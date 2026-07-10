@@ -11,6 +11,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "verify:meeting-frequency": "node scripts/verify-meeting-frequency.mjs",
     "verify:time-analysis": "node scripts/verify-time-analysis.mjs",
     "desktop:dev": "node electron/dev-runner.cjs",
     "desktop:build": "npm run build && electron-builder --mac dir",
