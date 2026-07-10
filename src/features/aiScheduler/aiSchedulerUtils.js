@@ -44,8 +44,9 @@ export const DEFAULT_AI_STATE = {
 }
 
 function isSimplifiedDefaultPreferences(preferences = {}) {
-  const rules = Array.isArray(preferences.rules) ? preferences.rules : []
-  const slots = Array.isArray(preferences.avoidTimeSlots) ? preferences.avoidTimeSlots : []
+  const safePreferences = preferences && typeof preferences === 'object' ? preferences : {}
+  const rules = Array.isArray(safePreferences.rules) ? safePreferences.rules : []
+  const slots = Array.isArray(safePreferences.avoidTimeSlots) ? safePreferences.avoidTimeSlots : []
 
   return (
     rules.length === SIMPLIFIED_DEFAULT_RULES.length &&
