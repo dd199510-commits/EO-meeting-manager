@@ -1,0 +1,341 @@
+/* =============================================
+   通用组件（新视图使用 nx-* 类）
+   ============================================= */
+
+/* ---- 按钮：三级层级 ---- */
+.nx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--nx-r-sm);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--nx-t-fast) var(--nx-ease),
+    border-color var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.nx-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nx-btn:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+.nx-btn-primary {
+  background: var(--nx-accent);
+  border-color: var(--nx-accent);
+  color: #ffffff;
+}
+
+.nx-btn-primary:hover:not(:disabled) {
+  background: var(--nx-accent-strong);
+  border-color: var(--nx-accent-strong);
+}
+
+.nx-btn-outline {
+  background: var(--nx-panel);
+  border-color: var(--nx-line);
+  color: var(--nx-ink-2);
+}
+
+.nx-btn-outline:hover:not(:disabled) {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.nx-btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--nx-muted);
+}
+
+.nx-btn-quiet:hover:not(:disabled) {
+  background: var(--nx-panel-soft);
+  color: var(--nx-ink-2);
+}
+
+.nx-btn-danger {
+  background: transparent;
+  border-color: transparent;
+  color: var(--nx-danger);
+}
+
+.nx-btn-danger:hover:not(:disabled) {
+  background: var(--nx-danger-soft);
+}
+
+/* ---- 卡片 ---- */
+.nx-card {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.nx-card-hover {
+  transition:
+    border-color var(--nx-t-fast) var(--nx-ease),
+    box-shadow var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-card-hover:hover {
+  border-color: var(--nx-line-strong);
+  box-shadow: var(--nx-shadow-float);
+}
+
+.route-loading {
+  min-height: 320px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+}
+
+.route-loading span {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--nx-line-strong);
+  border-top-color: var(--nx-accent);
+  border-radius: 50%;
+  animation: nx-route-spin 0.7s linear infinite;
+}
+
+@keyframes nx-route-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- 区块头 ---- */
+.nx-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 26px;
+}
+
+.nx-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #334155;
+  font-size: var(--nx-fs-body);
+  font-weight: 600;
+}
+
+.module-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 3px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+}
+
+.module-tab {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--nx-r-sm) - 3px);
+  background: transparent;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.module-tab:hover {
+  color: var(--nx-ink);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.module-tab-active,
+.module-tab-active:hover {
+  color: var(--nx-accent);
+  border-color: var(--nx-accent-line);
+  background: var(--nx-panel);
+  box-shadow: var(--nx-shadow-card);
+}
+
+.nx-section-title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--nx-accent-strong);
+}
+
+.nx-section-count {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+}
+
+/* ---- 列表行（分隔线式）---- */
+.nx-rows {
+  display: grid;
+  gap: 0;
+  align-content: start;
+  min-height: 0;
+}
+
+.nx-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 9px 2px;
+  border-top: 1px solid var(--nx-divider);
+  transition: background var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-rows > .nx-row:first-child,
+.nx-rows > .nx-empty:first-child {
+  border-top: 0;
+}
+
+.nx-row:hover {
+  background: var(--nx-panel-soft);
+}
+
+.nx-row-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nx-row-main strong {
+  color: var(--nx-ink-2);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nx-row-main span {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- 状态圆点 ---- */
+.nx-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--nx-soft);
+  flex: 0 0 auto;
+}
+
+.nx-dot-ok { background: var(--nx-accent); }
+.nx-dot-info { background: var(--nx-info); }
+.nx-dot-warn { background: var(--nx-warn); }
+.nx-dot-danger { background: var(--nx-danger); }
+
+/* ---- 徽标 ---- */
+.nx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: var(--nx-r-full);
+  font-size: var(--nx-fs-caption);
+  font-weight: 500;
+  background: var(--nx-panel-soft);
+  color: var(--nx-muted);
+}
+
+.nx-badge-ok { background: var(--nx-ok-soft); color: var(--nx-ok); }
+.nx-badge-warn { background: var(--nx-warn-soft); color: var(--nx-warn); }
+.nx-badge-danger { background: var(--nx-danger-soft); color: var(--nx-danger); }
+.nx-badge-info { background: var(--nx-info-soft); color: var(--nx-info); }
+.nx-badge-accent { background: var(--nx-accent-soft); color: var(--nx-accent-strong); }
+
+/* ---- 空态 ---- */
+.nx-empty {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 2px;
+  border-top: 1px solid var(--nx-divider);
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-body);
+}
+
+/* ---- 输入 ---- */
+.nx-input,
+.nx-select {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel);
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-body);
+  transition:
+    border-color var(--nx-t-fast) var(--nx-ease),
+    box-shadow var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-input:focus,
+.nx-select:focus {
+  border-color: var(--nx-accent);
+  box-shadow: 0 0 0 3px rgba(15, 148, 142, 0.12);
+  outline: none;
+}
+
+/* ---- 表格 ---- */
+.nx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--nx-fs-body);
+}
+
+.nx-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--nx-line);
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.nx-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--nx-divider);
+  color: var(--nx-ink-2);
+  vertical-align: middle;
+}
+
+.nx-table tbody tr {
+  transition: background var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-table tbody tr:hover {
+  background: var(--nx-panel-soft);
+}

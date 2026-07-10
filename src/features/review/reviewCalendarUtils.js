@@ -42,12 +42,17 @@ export function getCalendarHourRange(meetings = [], fallbackStartHour = 8, fallb
       minMinutes = Math.min(minMinutes, timeToMinutes(meeting.startTime))
     }
     if (meeting?.endTime) {
-      maxMinutes = Math.max(maxMinutes, timeToMinutes(meeting.endTime))
+      const startMinutes = meeting?.startTime ? timeToMinutes(meeting.startTime) : 0
+      let endMinutes = timeToMinutes(meeting.endTime)
+      if (meeting?.duration && endMinutes <= startMinutes) {
+        endMinutes = startMinutes + Number(meeting.duration)
+      }
+      maxMinutes = Math.max(maxMinutes, endMinutes)
     }
   })
 
   const startHour = Math.max(0, Math.floor(minMinutes / 60))
-  const endHour = Math.min(24, Math.ceil(maxMinutes / 60))
+  const endHour = Math.min(24, Math.ceil(maxMinutes / 60) + 1)
 
   return {
     startHour,
@@ -69,9 +74,10 @@ export function minutesToTime(totalMinutes) {
 export function calculateCardStyle(meeting, startHour = 8, blockHeight = 16) {
   const start = timeToMinutes(meeting.startTime)
   const end = timeToMinutes(meeting.endTime)
+  const duration = end > start ? end - start : Number(meeting.duration || 0)
   const base = startHour * 60
   const top = ((start - base) / 15) * blockHeight
-  const height = Math.max(((end - start) / 15) * blockHeight, blockHeight)
+  const height = Math.max((duration / 15) * blockHeight, blockHeight)
   return { top, height }
 }
 

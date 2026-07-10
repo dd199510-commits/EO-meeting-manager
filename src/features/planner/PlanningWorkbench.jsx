@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
+import { confirmDialog, toast } from '../../components/Feedback'
 import { getCalendarDays, getNextMonthRange } from '../../lib/date'
 import {
   buildAIPrompt,
@@ -274,6 +275,7 @@ export function PlanningWorkbench({
   currentPlanningTaskId = '',
   onCreatePlanningTask,
   onCreateDraftTask,
+  onUpdatePlanningTaskAiState,
   onSelectPlanningTask,
   onDeletePlanningTask,
   onApplyAiSchedule,
@@ -794,13 +796,31 @@ export function PlanningWorkbench({
     }
   }, [desktopAiAvailable, selectedSchemeId])
 
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key !== 'Escape') return
+      if (showConnectionModal) setShowConnectionModal(false)
+      else if (showResultJsonModal) setShowResultJsonModal(false)
+      else if (showInputJsonModal) setShowInputJsonModal(false)
+      else if (showInstancesModal) setShowInstancesModal(false)
+      else if (selectedSchemeId) setSelectedSchemeId('')
+      else if (showNewTaskModal) setShowNewTaskModal(false)
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [showConnectionModal, showResultJsonModal, showInputJsonModal, showInstancesModal, selectedSchemeId, showNewTaskModal])
+
   function updatePreferences(nextPreferences) {
-    setAiState((current) => ({
-      ...current,
+    const nextAiState = {
+      ...aiState,
       inputMeetings: rawExport,
       exportBatch,
       preferences: nextPreferences,
-    }))
+    }
+
+    setAiState(nextAiState)
+    onUpdatePlanningTaskAiState?.(nextAiState)
   }
 
   function beginEditRule(rule) {
@@ -990,9 +1010,12 @@ export function PlanningWorkbench({
       return
     }
 
-    const confirmed = window.confirm(
-      `确定删除这个方案吗？\n\n${getQueueSourceLabel(job)} · ${formatQueueDateRange(job.inputMeetings?.timeRange)}`,
-    )
+    const confirmed = await confirmDialog({
+      title: '删除候选方案',
+      message: `${getQueueSourceLabel(job)} · ${formatQueueDateRange(job.inputMeetings?.timeRange)}\n删除后无法恢复。`,
+      confirmLabel: '删除',
+      danger: true,
+    })
     if (!confirmed) return
 
     try {
@@ -1087,6 +1110,36 @@ export function PlanningWorkbench({
     return 'active'
   }
 
+  function getTaskStageMeta(status) {
+    if (status === 'scheduled') return { done: 3, current: 0, label: '已完成排程' }
+    if (status === 'ai_done') return { done: 2, current: 3, label: '下一步：调整与采用' }
+    if (status === 'ai_running') return { done: 1, current: 2, label: '生成方案中（AI 运行）' }
+    if (status === 'list_ready') return { done: 1, current: 2, label: '下一步：生成方案' }
+    return { done: 0, current: 1, label: '下一步：准备清单' }
+  }
+
+  function renderTaskStageProgress(status) {
+    const stage = getTaskStageMeta(status)
+
+    return (
+      <span className="planner-task-stage" title={stage.label}>
+        {[1, 2, 3].map((step) => (
+          <em
+            key={step}
+            className={
+              step <= stage.done
+                ? 'planner-task-stage-seg planner-task-stage-seg-done'
+                : step === stage.current
+                  ? 'planner-task-stage-seg planner-task-stage-seg-current'
+                  : 'planner-task-stage-seg'
+            }
+          />
+        ))}
+        <span className="planner-task-stage-label">{stage.label}</span>
+      </span>
+    )
+  }
+
   function startNewPlanningTask() {
     setNewTaskName('')
     setShowNewTaskModal(true)
@@ -1144,11 +1197,17 @@ export function PlanningWorkbench({
     setPlannerView('workspace')
   }
 
-  function deletePlanningTask(task) {
+  async function deletePlanningTask(task) {
     if (!task?.id) return
-    const confirmed = window.confirm(`确定删除排程任务“${task.name}”吗？`)
+    const confirmed = await confirmDialog({
+      title: '删除排程任务',
+      message: `确定删除「${task.name}」吗？任务下的方案与排程记录将一并删除，无法恢复。`,
+      confirmLabel: '删除',
+      danger: true,
+    })
     if (!confirmed) return
     onDeletePlanningTask?.(task.id)
+    toast(`排程任务「${task.name}」已删除`, 'info')
     if (task.id === currentPlanningTaskId) {
       clearGeneratedInstances()
       setPlannerView('home')
@@ -1205,6 +1264,11 @@ export function PlanningWorkbench({
         options.importToReview
           ? `已导入 ${parsed.scheduledMeetings.length} 条 AI 排程结果，正在进入排程调整。`
           : `已导入 ${parsed.scheduledMeetings.length} 条 AI 排程结果，请继续导入到审核排程。`,
+      )
+      toast(
+        options.importToReview
+          ? `已采用方案（${parsed.scheduledMeetings.length} 条），进入排程调整`
+          : `已导入 ${parsed.scheduledMeetings.length} 条排程结果`,
       )
       if (options.importToReview) {
         setActiveWorkflowStep('review')
@@ -1360,8 +1424,8 @@ export function PlanningWorkbench({
       <div className="planner-task-home">
         <section className="planner-task-home-toolbar">
           <div>
-            <span>排程任务中心</span>
-            <h2>创建、继续或查看历史排程任务</h2>
+            <h1>排程任务中心</h1>
+            <span>创建、继续或查看历史排程任务</span>
           </div>
           <button type="button" className="primary-button" onClick={startNewPlanningTask}>
             <Bot size={16} />
@@ -1385,6 +1449,7 @@ export function PlanningWorkbench({
                       {getPlanningTaskStatusLabel(task.status)}
                     </span>
                     <strong>{task.name}</strong>
+                    {renderTaskStageProgress(task.status)}
                     <em>{task.updatedAt ? new Date(task.updatedAt).toLocaleString() : '尚未更新'}</em>
                   </button>
                   <div className="planner-task-home-item-meta">
@@ -1497,57 +1562,141 @@ export function PlanningWorkbench({
     )
   }
 
+  const currentPlanningTask = planningTasks.find((task) => task.id === currentPlanningTaskId) ?? null
+  const latestCompletedScheme = taskQueue.find((job) => job.status === 'completed') ?? null
+  const canOpenAiStep = hasGeneratedPlan && !isGeneratedPlanStale
+  const canOpenReviewStep = Boolean(
+    hasImportedSchedule ||
+    currentPlanningTask?.status === 'scheduled' ||
+    currentPlanningTask?.reviewState?.scheduledMeetings?.length,
+  )
+  const workflowSteps = [
+    {
+      key: 'prepare',
+      index: '1',
+      label: '准备清单',
+      hint: '范围与规则',
+      available: true,
+      completed: hasGeneratedPlan,
+    },
+    {
+      key: 'ai',
+      index: '2',
+      label: '生成方案',
+      hint: 'AI 候选方案',
+      available: canOpenAiStep || activeWorkflowStep === 'ai' || canOpenReviewStep,
+      completed: Boolean(latestCompletedScheme || canOpenReviewStep),
+    },
+    {
+      key: 'review',
+      index: '3',
+      label: '调整确认',
+      hint: '日历与冲突',
+      available: canOpenReviewStep || activeWorkflowStep === 'review',
+      completed: currentPlanningTask?.status === 'scheduled',
+    },
+  ]
+
   return (
-    <div className="planner-generation-page">
+    <div
+      className={[
+        'planner-generation-page',
+        `planner-workflow-${activeWorkflowStep}`,
+        activeWorkflowStep === 'review' ? 'planner-step-review' : '',
+      ].filter(Boolean).join(' ')}
+    >
       <section className="panel planner-task-workflow-head">
         <div className="planner-task-title">
-          <span>当前排程任务</span>
-          <h2>{hasCompleteRange ? formatQueueDateRange(range) : '待选择排程范围'}</h2>
+          <div className="planner-breadcrumb">
+            <button
+              type="button"
+              className="planner-breadcrumb-link"
+              onClick={() => setPlannerView('home')}
+              title="返回排程任务中心"
+            >
+              排程任务中心
+            </button>
+            <span className="planner-breadcrumb-sep" aria-hidden="true">›</span>
+            {planningTasks.length > 0 ? (
+              <select
+                className="planner-task-switcher"
+                value={currentPlanningTaskId}
+                onChange={(event) => {
+                  const nextTask = planningTasks.find((task) => task.id === event.target.value)
+                  if (nextTask) openPlanningTask(nextTask)
+                }}
+                aria-label="切换排程任务"
+                title="切换排程任务"
+              >
+                {!currentPlanningTaskId ? <option value="">未命名任务</option> : null}
+                {planningTasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.name}（{getPlanningTaskStatusLabel(task.status)}）
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <strong className="planner-breadcrumb-current">
+                {currentPlanningTask?.name || (hasCompleteRange ? formatQueueDateRange(range) : '未命名任务')}
+              </strong>
+            )}
+          </div>
           <p>
+            {hasCompleteRange ? `${formatQueueDateRange(range)} · ` : ''}
             {hasGeneratedPlan
-              ? `${generatedInstances.length} 个待排会议实例`
+              ? `${generatedInstances.length} 个待排会议实例 · 任务可生成多个候选方案，采用其一后进入调整`
               : hasValidRange
                 ? `预计 ${pendingInstances.length} 个会议实例`
                 : '选择范围后生成待排清单'}
           </p>
         </div>
         <div className="planner-task-workflow-actions">
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => setPlannerView('home')}
-          >
-            返回任务首页
-          </button>
-          {activeWorkflowStep !== 'ai' ? (
+          <div className="planner-task-stepper" role="tablist" aria-label="排程任务步骤">
+            {workflowSteps.map((step) => {
+              const className = [
+                'planner-task-step',
+                activeWorkflowStep === step.key ? 'planner-task-step-active' : '',
+                step.completed ? 'planner-task-step-complete' : '',
+                !step.available ? 'planner-task-step-locked' : '',
+              ].filter(Boolean).join(' ')
+
+              return (
+                <button
+                  key={step.key}
+                  type="button"
+                  className={className}
+                  onClick={() => setActiveWorkflowStep(step.key)}
+                  role="tab"
+                  aria-selected={activeWorkflowStep === step.key}
+                  disabled={!step.available}
+                >
+                  <span>{step.completed ? <Check size={12} /> : step.index}</span>
+                  <span className="planner-task-step-copy">
+                    <strong>{step.label}</strong>
+                    <small>{step.hint}</small>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {activeWorkflowStep === 'prepare' && canOpenAiStep ? (
             <button
               type="button"
               className="primary-button planner-workflow-primary"
               onClick={() => setActiveWorkflowStep('ai')}
-              disabled={!hasGeneratedPlan}
             >
-              进入 AI 排程
+              继续生成方案
             </button>
           ) : null}
-          <div className="planner-task-stepper" role="tablist" aria-label="排程任务步骤">
-            {[
-              ['prepare', '1', '清单准备'],
-              ['ai', '2', 'AI 排程'],
-              ['review', '3', '排程调整'],
-            ].map(([key, index, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={activeWorkflowStep === key ? 'planner-task-step planner-task-step-active' : 'planner-task-step'}
-                onClick={() => setActiveWorkflowStep(key)}
-                role="tab"
-                aria-selected={activeWorkflowStep === key}
-              >
-                <span>{index}</span>
-                <strong>{label}</strong>
-              </button>
-            ))}
-          </div>
+          {activeWorkflowStep === 'ai' && latestCompletedScheme ? (
+            <button
+              type="button"
+              className="primary-button planner-workflow-primary"
+              onClick={() => importJobResult(latestCompletedScheme, { importToReview: true, markImported: true })}
+            >
+              采用最新方案
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -1555,7 +1704,7 @@ export function PlanningWorkbench({
         <div className="planner-task-main">
       {activeWorkflowStep === 'prepare' ? (
       <div className="planner-prepare-workspace">
-      <section className="panel planner-step-card planner-step-card-range">
+      <section className="panel planner-step-card planner-step-card-range planner-control-surface">
         <div className="planner-step-card-head">
           <strong>清单准备</strong>
           <h2>范围与生成</h2>
@@ -1771,7 +1920,7 @@ export function PlanningWorkbench({
         </div>
       </section>
 
-      <section className="panel planner-step-card planner-step-card-preview">
+      <section className="panel planner-step-card planner-step-card-preview planner-work-surface">
         <div className="planner-step-card-head planner-step-card-head-row">
           <div>
             <strong>清单准备</strong>
@@ -1872,7 +2021,8 @@ export function PlanningWorkbench({
       ) : null}
 
       {activeWorkflowStep === 'ai' ? (
-      <aside className="panel planner-step-card planner-step-card-ai">
+      <aside className="panel planner-step-card planner-step-card-ai planner-ai-workspace">
+        <div className="planner-ai-control-surface">
         <div className="planner-step-card-head">
           <strong>步骤 2</strong>
           <h2>AI 排程</h2>
@@ -1928,11 +2078,12 @@ export function PlanningWorkbench({
         {configError ? <p className="error-text">{configError}</p> : null}
         {submitError ? <p className="error-text">{submitError}</p> : null}
         {isGeneratedPlanStale ? <div className="info-note warning-note-inline">清单已过期，请更新</div> : null}
+        </div>
 
         <div className="planner-task-section">
           <div className="planner-task-section-head">
-            <strong>方案队列与历史</strong>
-            <span>当前任务下 {taskQueue.length} 个方案</span>
+            <strong>候选方案（本任务）</strong>
+            <span>已生成 {taskQueue.length} 个 · 点击查看详情，采用后进入第 3 步调整</span>
           </div>
           {groupedTaskQueue.length > 0 ? (
             <div className="planner-task-queue-list">
@@ -1973,6 +2124,20 @@ export function PlanningWorkbench({
                                 {JOB_STATUS_LABELS[job.status] ?? job.status}
                                 {isCompleted ? <Check size={12} /> : null}
                               </span>
+                              {isCompleted ? (
+                                <button
+                                  className="ghost-button planner-queue-adopt-button"
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    importJobResult(job, { importToReview: true, markImported: true })
+                                  }}
+                                  onKeyDown={(event) => event.stopPropagation()}
+                                  title="采用此方案并进入调整"
+                                >
+                                  采用
+                                </button>
+                              ) : null}
                               <button
                                 className="icon-button planner-queue-delete-button"
                                 type="button"
@@ -2015,7 +2180,7 @@ export function PlanningWorkbench({
       ) : null}
 
       {activeWorkflowStep === 'review' ? (
-      <section className="panel planner-step-card planner-review-step-card">
+      <section className="panel planner-step-card planner-review-step-card planner-work-surface">
         {typeof renderReviewBoard === 'function' ? (
           <div className="planner-review-step-board">
             {renderReviewBoard(() => setActiveWorkflowStep('prepare'))}

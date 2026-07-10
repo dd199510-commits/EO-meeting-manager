@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
+import { confirmDialog } from '../../components/Feedback'
 import {
   FREQUENCY_LABELS,
   MONTHS,
@@ -16,6 +17,7 @@ import { appendAttendeeNames, removeAttendeeNames } from '../../lib/contacts'
 export function EditModal({ meeting, meetings = [], contacts = [], open, isClosing = false, onClose, onSave, onAddContact }) {
   const [formData, setFormData] = useState(meeting)
   const [historyInput, setHistoryInput] = useState('')
+  const [historyError, setHistoryError] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const frequencyType = formData ? getMeetingFrequencyType(formData) : 'weekly'
   const historyGroups = formData ? groupMeetingHistory(formData) : []
@@ -24,11 +26,30 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
     : [formData?.frequency?.monthSpec || 1]
 
   function addHistoryDates() {
-    const dates = historyInput
+    const inputDates = historyInput
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-      .filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item))
+    const today = new Date()
+    const todayValue = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0'),
+    ].join('-')
+    const invalidDates = inputDates.filter((item) => !/^\d{4}-\d{2}-\d{2}$/.test(item))
+    const futureDates = inputDates.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && item > todayValue)
+    const dates = inputDates.filter(
+      (item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && item <= todayValue,
+    )
+
+    if (invalidDates.length > 0 || futureDates.length > 0) {
+      const messages = []
+      if (invalidDates.length > 0) messages.push(`日期格式不正确：${invalidDates.join('、')}`)
+      if (futureDates.length > 0) messages.push(`未来日期不能作为历史记录：${futureDates.join('、')}`)
+      setHistoryError(messages.join('；'))
+    } else {
+      setHistoryError('')
+    }
 
     if (dates.length === 0) return
 
@@ -60,14 +81,48 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
     })
   }
 
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(meeting)
+
+  async function requestClose() {
+    if (isDirty) {
+      const discard = await confirmDialog({
+        title: '放弃修改',
+        message: '当前会议资料有未保存的修改，确定放弃并关闭吗？',
+        confirmLabel: '放弃修改',
+        danger: true,
+      })
+      if (!discard) return
+    }
+    onClose()
+  }
+
+  // 注意：Hook 需在提前 return 之前声明
+  useEffect(() => {
+    if (!open) return undefined
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') requestClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isDirty, formData])
+
   if (!meeting || !formData) return null
 
   return (
-    <div className={open && !isClosing ? 'modal-backdrop modal-open' : 'modal-backdrop modal-closing'}>
-      <div className={open && !isClosing ? 'modal-card modal-card-open' : 'modal-card modal-card-closing'}>
+    <div
+      className={open && !isClosing ? 'modal-backdrop modal-open' : 'modal-backdrop modal-closing'}
+      onClick={requestClose}
+    >
+      <div
+        className={open && !isClosing ? 'modal-card modal-card-open' : 'modal-card modal-card-closing'}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>{meeting.id ? '编辑会议' : '新建会议'}</h2>
-          <button className="icon-button" onClick={onClose}>
+          <button className="icon-button" onClick={requestClose} aria-label="关闭">
             <X size={18} />
           </button>
         </div>
@@ -265,7 +320,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
               {frequencyType !== 'adhoc' ? (
                 <div className="rule-helper-row">
                   <label className="field inline-mini-field">
-                    <span>锚点日期</span>
+                    <span>起始参考日</span>
                     <input
                       type="date"
                       value={formData.frequency?.anchorDate || ''}
@@ -274,7 +329,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                       }
                     />
                   </label>
-                  <span className="rule-helper-text">可以理解为“这条周期从哪一次开始算”。它用于推算后续日期，不会改变你上面选择的周几、几号或月份规则。</span>
+                  <span className="rule-helper-text">没有历史记录时从这里起算；有历史记录后，只按最近一次实际日期所在的周或月继续排期。</span>
                 </div>
               ) : null}
 
@@ -353,13 +408,17 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                 <div className="inline-history-row">
                   <input
                     value={historyInput}
-                    onChange={(event) => setHistoryInput(event.target.value)}
+                    onChange={(event) => {
+                      setHistoryInput(event.target.value)
+                      setHistoryError('')
+                    }}
                     placeholder="输入日期，逗号分隔：2026-03-01, 2026-03-08"
                   />
                   <button className="ghost-button" onClick={addHistoryDates}>
                     添加历史
                   </button>
                 </div>
+                {historyError ? <div className="warning-text rule-warning-text">{historyError}</div> : null}
                 <div className="inline-history-list">
                   {(formData.history ?? []).length === 0 ? <div className="empty-state">暂无历史记录</div> : null}
                   {historyGroups.map((group) => (
@@ -391,10 +450,18 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
           ) : null}
         </div>
         <div className="panel-actions">
-          <button className="ghost-button" onClick={onClose}>
+          {!formData.name?.trim() ? (
+            <span className="edit-modal-validation-hint">请填写会议名称后保存</span>
+          ) : null}
+          <button className="ghost-button" onClick={requestClose}>
             取消
           </button>
-          <button className="primary-button" onClick={() => onSave(formData)}>
+          <button
+            className="primary-button"
+            onClick={() => onSave(formData)}
+            disabled={!formData.name?.trim()}
+            title={!formData.name?.trim() ? '请先填写会议名称' : '保存会议'}
+          >
             保存
           </button>
         </div>

@@ -1,0 +1,730 @@
+/* =============================================
+   会议库（V5 重建，mv-* 类）
+   布局目标：视口内固定高度，仅列表内部滚动
+   ============================================= */
+
+.app-frame-meetings .app-main {
+  height: 100vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app-frame-meetings .app-page-content {
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 20px 16px;
+}
+
+.mv-workspace {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr) 316px;
+  gap: 10px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---- 左侧频率导航 ---- */
+.mv-nav {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.mv-nav-group {
+  display: grid;
+  gap: 4px;
+}
+
+.mv-nav-item,
+.mv-subnav-item {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: #344054;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--nx-t-fast) var(--nx-ease), color var(--nx-t-fast) var(--nx-ease);
+}
+
+.mv-nav-item:hover,
+.mv-subnav-item:hover {
+  background: var(--nx-panel-soft);
+}
+
+.mv-nav-item span,
+.mv-subnav-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mv-nav-item strong,
+.mv-subnav-item strong {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nx-muted);
+}
+
+.mv-nav-item em {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: var(--nx-r-full);
+  background: var(--nx-accent);
+  opacity: 0.55;
+}
+
+.mv-nav-item-blue em { background: var(--nx-info); }
+.mv-nav-item-green em { background: var(--nx-accent); }
+.mv-nav-item-amber em { background: var(--nx-warn); }
+.mv-nav-item-slate em { background: var(--nx-soft); }
+
+.mv-nav-item-active,
+.mv-nav-item-active:hover,
+.mv-subnav-item-active,
+.mv-subnav-item-active:hover {
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.mv-nav-item-active strong,
+.mv-subnav-item-active strong {
+  color: var(--nx-accent-strong);
+}
+
+.mv-subnav {
+  display: grid;
+  gap: 2px;
+  padding-left: 10px;
+}
+
+.mv-subnav-item {
+  min-height: 26px;
+  padding: 4px 8px;
+}
+
+.mv-subnav-item span {
+  font-size: 11px;
+}
+
+/* ---- 中间列表面板 ---- */
+.mv-list-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.mv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--nx-divider);
+}
+
+.mv-content-tabs {
+  flex: 0 0 auto;
+}
+
+.mv-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 140px;
+}
+
+.mv-search svg {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: var(--nx-soft);
+  pointer-events: none;
+}
+
+.mv-search .nx-input {
+  width: 100%;
+  min-height: 32px;
+  padding-left: 30px;
+}
+
+.mv-sort .nx-select {
+  min-height: 32px;
+}
+
+.mv-count {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.mv-toolbar .nx-btn {
+  min-height: 32px;
+}
+
+.mv-more {
+  position: relative;
+}
+
+.mv-more .nx-btn {
+  padding: 0 9px;
+}
+
+.mv-more-open {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+}
+
+.mv-more-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 160px;
+  display: grid;
+  padding: 5px;
+  box-shadow: var(--nx-shadow-float);
+}
+
+.mv-more-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: var(--nx-ink-2);
+  font-size: var(--nx-fs-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--nx-t-fast) var(--nx-ease);
+}
+
+.mv-more-item:hover {
+  background: var(--nx-panel-soft);
+}
+
+/* ---- 快捷筛选芯片：单行横向滚动 ---- */
+.mv-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--nx-divider);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.mv-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel);
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--nx-t-fast) var(--nx-ease),
+    border-color var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+}
+
+.mv-chip:hover {
+  border-color: var(--nx-accent-line);
+  color: var(--nx-accent-strong);
+}
+
+.mv-chip-active,
+.mv-chip-active:hover {
+  border-color: var(--nx-accent);
+  background: var(--nx-accent-soft);
+  color: var(--nx-accent-strong);
+}
+
+.mv-chip-clear {
+  border-style: dashed;
+}
+
+.mv-chip-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 16px;
+  background: var(--nx-line);
+}
+
+.mv-chip-hint {
+  flex: 0 0 auto;
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+}
+
+/* ---- 高级筛选浮层 ---- */
+.mv-filter-layer {
+  position: absolute;
+  top: 96px;
+  left: 12px;
+  right: 12px;
+  z-index: 25;
+  border-radius: var(--nx-r-md);
+  box-shadow: var(--nx-shadow-float);
+}
+
+.mv-filter-layer .panel {
+  margin: 0;
+}
+
+/* ---- 表头与行 ---- */
+.mv-table-head,
+.mv-row {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 1.4fr)
+    minmax(56px, 0.34fr)
+    minmax(84px, 0.6fr)
+    minmax(46px, 0.3fr)
+    minmax(90px, 0.7fr)
+    minmax(60px, 0.4fr)
+    64px;
+  align-items: center;
+  gap: 6px;
+}
+
+.mv-table-head {
+  min-height: 30px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--nx-divider);
+  background: var(--nx-panel-soft);
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+}
+
+.mv-list {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.mv-row {
+  min-height: 44px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--nx-divider);
+  background: var(--nx-panel);
+  cursor: pointer;
+  transition: background var(--nx-t-fast) var(--nx-ease);
+}
+
+.mv-row:hover {
+  background: var(--nx-panel-soft);
+}
+
+.mv-row-selected,
+.mv-row-selected:hover {
+  background: var(--nx-accent-soft);
+  box-shadow: inset 2px 0 0 var(--nx-accent);
+}
+
+.mv-row-dragging {
+  opacity: 0.5;
+}
+
+.mv-cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #4b5565;
+  font-size: 12px;
+}
+
+.mv-cell svg {
+  flex: 0 0 auto;
+  color: var(--nx-soft);
+}
+
+.mv-cell span,
+.mv-cell strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mv-cell-name {
+  gap: 7px;
+}
+
+.mv-cell-name > div {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.mv-cell-name strong {
+  color: var(--nx-ink-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.mv-cell-name span {
+  color: var(--nx-soft);
+  font-size: 11px;
+}
+
+.mv-cell-signals span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #5d6b7c;
+}
+
+.mv-cell-signals .mv-muted {
+  color: var(--nx-soft);
+}
+
+.mv-drag {
+  color: var(--nx-line-strong);
+  cursor: grab;
+}
+
+.mv-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--nx-t-fast) var(--nx-ease);
+}
+
+.mv-row:hover .mv-actions,
+.mv-row-selected .mv-actions,
+.mv-actions:focus-within {
+  opacity: 1;
+}
+
+.mv-actions .icon-button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: var(--nx-r-sm);
+}
+
+.mv-list-empty {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 48px 20px;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+  text-align: center;
+}
+
+.mv-list-empty-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- 右侧详情/编辑栏 ---- */
+.mv-inspector {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.mv-inspector-head {
+  display: grid;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--nx-divider);
+}
+
+.mv-inspector-head-edit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mv-inspector-head-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mv-inspector-head-copy strong {
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-title);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mv-inspector-head-copy span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.mv-inspector-title {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.mv-inspector-title h2 {
+  margin: 0;
+  color: var(--nx-ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mv-inspector-title p {
+  margin: 0;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.mv-inspector-title-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mv-inspector-title-actions .nx-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: var(--nx-fs-caption);
+}
+
+.mv-inspector-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.mv-inspector-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mv-inspector-metrics > div {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel-soft);
+}
+
+.mv-inspector-metrics span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.mv-inspector-metrics strong {
+  color: var(--nx-ink);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.mv-inspector-section {
+  display: grid;
+  gap: 6px;
+}
+
+.mv-inspector-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+}
+
+.mv-inspector-section-head svg {
+  color: var(--nx-accent-strong);
+}
+
+.mv-inspector-section-head strong {
+  font-size: var(--nx-fs-body);
+  font-weight: 600;
+}
+
+.mv-inspector-section-head span {
+  margin-left: auto;
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+}
+
+.mv-inspector-section p {
+  margin: 0;
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-body);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.mv-inspector-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.mv-inspector-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--nx-r-full);
+  background: var(--nx-info-soft);
+  color: var(--nx-info);
+  font-size: var(--nx-fs-caption);
+  font-weight: 500;
+}
+
+.mv-inspector-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.mv-inspector-history span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--nx-r-full);
+  background: var(--nx-panel-soft);
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+/* ---- 回收站 ---- */
+.mv-trash-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.mv-trash-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 1180px) {
+  .mv-workspace {
+    grid-template-columns: 150px minmax(0, 1fr) 280px;
+  }
+}
+
+@media (max-width: 980px) {
+  .app-frame-meetings .app-main {
+    height: auto;
+    overflow: visible;
+    display: block;
+  }
+
+  .app-frame-meetings .app-page-content {
+    overflow: visible;
+  }
+
+  .mv-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .mv-nav {
+    max-height: 220px;
+  }
+
+  .mv-list {
+    max-height: 60vh;
+  }
+}
+
+/* ---- V4.6 工作台层级：导航 / 主列表 / 参考详情 ---- */
+.app-shell.app-frame .mv-nav {
+  border: 0;
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-control);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .mv-list-panel {
+  border: 1px solid var(--nx-line-work);
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-work);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.055);
+}
+
+.app-shell.app-frame .mv-inspector {
+  border: 0;
+  border-radius: var(--nx-r-md);
+  background: var(--nx-surface-context);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .mv-inspector-head {
+  border-bottom-color: rgba(100, 116, 139, 0.14);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.app-shell.app-frame .mv-inspector-metrics {
+  gap: 0;
+  padding: 8px 0;
+  border-block: 1px solid rgba(100, 116, 139, 0.12);
+}
+
+.app-shell.app-frame .mv-inspector-metrics > div {
+  border-radius: 0;
+  background: transparent;
+}
+
+.app-shell.app-frame .mv-inspector-metrics > div + div {
+  border-left: 1px solid rgba(100, 116, 139, 0.14);
+}
+
+.app-shell.app-frame .mv-row-selected,
+.app-shell.app-frame .mv-row-selected:hover {
+  background: var(--nx-surface-selected);
+  box-shadow: inset 3px 0 0 var(--nx-accent);
+}

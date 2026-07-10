@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import './App.css'
+import './styles/index.css'
 import { AppSidebar } from './components/AppSidebar'
+import { FeedbackHost, confirmDialog, toast } from './components/Feedback'
 import {
   AI_STORAGE_KEY,
   createEmptyMeeting,
@@ -15,11 +17,7 @@ import { LogsView } from './features/logs/LogsView'
 import { createLog, persistLogs, readLogs } from './features/logs/logUtils'
 import { MeetingsView } from './features/meetings/MeetingsView'
 import { EditModal } from './features/meetings/EditModal'
-import { PlanningWorkbench } from './features/planner/PlanningWorkbench'
-import { ReviewBoard } from './features/review/ReviewBoard'
-import { ReserveNoticeBoard } from './features/reserveNotice/ReserveNoticeBoard'
 import { normalizeNoticeTemplates } from './features/reserveNotice/notificationTemplates'
-import { OutlookInviteBoard } from './features/outlookInvite/OutlookInviteBoard'
 import {
   DEFAULT_REVIEW_STATE,
   normalizeReviewState,
@@ -32,12 +30,20 @@ import { detectConflicts } from './lib/conflicts'
 import { normalizeContact, resolveAttendeeRefs } from './lib/contacts'
 import { calculateNextOccurrence, syncMeetingAnchorDate } from './lib/meetingFrequency'
 import { persistStorage, readStorage } from './lib/storage'
+import { APP_VERSION_LABEL, BACKUP_SCHEMA_VERSION } from './lib/appVersion'
+import { readModuleBackupData, restoreModuleBackupData, saveRecoveryPoint } from './lib/backupData'
 import {
   DEFAULT_AI_STATE,
   normalizeAiState,
   persistAiState,
   readAiState,
 } from './features/aiScheduler/aiSchedulerUtils'
+
+const PlanningWorkbench = lazy(() => import('./features/planner/PlanningWorkbench').then((module) => ({ default: module.PlanningWorkbench })))
+const ReviewBoard = lazy(() => import('./features/review/ReviewBoard').then((module) => ({ default: module.ReviewBoard })))
+const ReserveNoticeBoard = lazy(() => import('./features/reserveNotice/ReserveNoticeBoard').then((module) => ({ default: module.ReserveNoticeBoard })))
+const OutlookInviteBoard = lazy(() => import('./features/outlookInvite/OutlookInviteBoard').then((module) => ({ default: module.OutlookInviteBoard })))
+const TimeAnalysisWorkbench = lazy(() => import('./features/timeAnalysis').then((module) => ({ default: module.TimeAnalysisWorkbench })))
 
 const PLANNING_TASKS_STORAGE_KEY = 'meeting-manager:planning-tasks:v1'
 const RESERVE_NOTICE_SCHEME_STATUS_KEY = 'meeting-manager:reserve-notice-scheme-status:v1'
@@ -118,6 +124,10 @@ function App() {
       title: '会邀生成',
       description: '选择已排程任务、日程安排和会议方案，生成 Outlook 批量草稿脚本',
     },
+    timeAnalysis: {
+      title: '时间分析',
+      description: '批量维护会议明细，生成季度趋势、问题会议与排期建议',
+    },
     contacts: {
       title: '通讯录',
       description: '维护参会人姓名、邮箱与别名',
@@ -135,6 +145,13 @@ function App() {
     meetings: '会议记录',
     planning: '排程记录',
   }
+  const PAGE_IDS = Object.keys(PAGE_META)
+
+  const readInitialTab = () => {
+    if (typeof window === 'undefined') return 'home'
+    const hashTab = window.location.hash.replace(/^#\/?/, '').split('?')[0]
+    return PAGE_IDS.includes(hashTab) ? hashTab : 'home'
+  }
 
   const defaultFilters = {
     search: '',
@@ -146,7 +163,7 @@ function App() {
   }
 
   const initialData = useMemo(() => readStorage(), [])
-  const [activeTab, setActiveTab] = useState('home')
+  const [activeTab, setActiveTab] = useState(readInitialTab)
   const [meetings, setMeetings] = useState(initialData.meetings)
   const [scheduledMeetings, setScheduledMeetings] = useState(initialData.scheduled)
   const [contacts, setContacts] = useState(initialData.contacts)
@@ -175,7 +192,38 @@ function App() {
   const [editingMeeting, setEditingMeeting] = useState(null)
   const [isEditModalClosing, setIsEditModalClosing] = useState(false)
   const [showBatchImport, setShowBatchImport] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [timeAnalysisRevision, setTimeAnalysisRevision] = useState(0)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem('meeting-manager:ui:sidebar-collapsed:v1') === '1',
+  )
+
+  useEffect(() => {
+    window.localStorage.setItem('meeting-manager:ui:sidebar-collapsed:v1', sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    const nextHash = `#/${activeTab}`
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, '', nextHash)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    function handleHashChange() {
+      const hashTab = window.location.hash.replace(/^#\/?/, '').split('?')[0]
+      if (PAGE_IDS.includes(hashTab)) {
+        setActiveTab((current) => (current === hashTab ? current : hashTab))
+      }
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    window.addEventListener('popstate', handleHashChange)
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('popstate', handleHashChange)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     persistStorage({
@@ -281,23 +329,12 @@ function App() {
     () => meetings.filter((meeting) => meeting.status === 'deleted'),
     [meetings],
   )
-  const pageTabs = (() => {
-    if (activeTab === 'meetings') {
-      return Object.entries(MEETING_TAB_META).map(([id, label]) => ({
-        id,
-        label: id === 'trash' && deletedMeetings.length > 0 ? `${label} (${deletedMeetings.length})` : label,
-      }))
-    }
-
-    if (activeTab === 'logs') {
-      return Object.entries(LOG_TAB_META).map(([id, label]) => ({ id, label }))
-    }
-
-    return []
-  })()
-
-  const activePageTab =
-    activeTab === 'meetings' ? meetingTab : activeTab === 'planner' ? planningTab : activeTab === 'logs' ? logsTab : ''
+  const meetingTabOptions = Object.entries(MEETING_TAB_META).map(([id, label]) => ({
+    id,
+    label: id === 'trash' && deletedMeetings.length > 0 ? `${label} (${deletedMeetings.length})` : label,
+  }))
+  const logTabOptions = Object.entries(LOG_TAB_META).map(([id, label]) => ({ id, label }))
+  const activePageTab = activeTab === 'meetings' ? meetingTab : activeTab === 'logs' ? logsTab : ''
 
   useEffect(() => {
     const scrollToTop = () => {
@@ -443,6 +480,27 @@ function App() {
     return taskId
   }
 
+  function updateCurrentPlanningTaskAiState(nextAiState) {
+    if (!currentPlanningTaskId) return
+
+    const normalizedAiState = normalizeAiState(nextAiState)
+    const now = new Date().toISOString()
+
+    setPlanningTasks((current) =>
+      current.map((task) =>
+        task.id === currentPlanningTaskId
+          ? normalizePlanningTask({
+              ...task,
+              aiState: normalizedAiState,
+              timeRange: normalizedAiState.inputMeetings?.timeRange ?? task.timeRange,
+              generatedCount: normalizedAiState.inputMeetings?.meetings?.length ?? task.generatedCount,
+              updatedAt: now,
+            })
+          : task,
+      ),
+    )
+  }
+
   function deletePlanningTask(taskId) {
     setPlanningTasks((current) => current.filter((task) => task.id !== taskId))
     if (taskId === currentPlanningTaskId) {
@@ -554,6 +612,7 @@ function App() {
       persistedMeeting.name || '未命名会议',
       isNew ? '新建会议' : '编辑会议',
     )
+    toast(isNew ? `已新建会议「${persistedMeeting.name || '未命名会议'}」` : '会议修改已保存')
     closeEditMeeting()
   }
 
@@ -576,6 +635,7 @@ function App() {
     setContacts(nextContacts)
     refreshMeetingAttendeeRefs(nextContacts)
     appendLog('update', normalizedContact.name || '未命名联系人', '保存通讯录联系人')
+    toast(`联系人「${normalizedContact.name || '未命名联系人'}」已保存`)
   }
 
   function handleAddContactFromName(name) {
@@ -602,12 +662,21 @@ function App() {
     appendLog('create', trimmedName, '从参会人标签添加到通讯录')
   }
 
-  function handleDeleteContact(id) {
+  async function handleDeleteContact(id) {
     const target = contacts.find((contact) => contact.id === id)
+    const confirmed = await confirmDialog({
+      title: '删除联系人',
+      message: `确定删除「${target?.name || '未命名联系人'}」吗？删除后无法恢复，会议中的参会人关联将失效。`,
+      confirmLabel: '删除',
+      danger: true,
+    })
+    if (!confirmed) return
+
     const nextContacts = contacts.filter((contact) => contact.id !== id)
     setContacts(nextContacts)
     refreshMeetingAttendeeRefs(nextContacts)
     if (target) appendLog('delete', target.name, '从通讯录删除')
+    toast(`联系人「${target?.name || '未命名联系人'}」已删除`, 'info')
   }
 
   function handleDeleteMeeting(id) {
@@ -617,6 +686,7 @@ function App() {
     )
     if (target) {
       appendLog('delete', target.name, '移入回收站')
+      toast(`「${target.name}」已移入回收站，可随时恢复`, 'info')
     }
   }
 
@@ -634,14 +704,16 @@ function App() {
     ].join('')
   }
 
-  function handleExport() {
+  function buildSystemBackupPayload() {
     const exportedMeetings = meetings.map((meeting) => ({
       ...meeting,
       attendeeRefs: resolveAttendeeRefs(meeting.attendees, contacts),
       extraInviteeRefs: resolveAttendeeRefs(meeting.extraInvitees, contacts),
     }))
-    const exportPayload = {
-      version: 'V3.5',
+
+    return {
+      version: APP_VERSION_LABEL,
+      schemaVersion: BACKUP_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
       meetings: exportedMeetings,
       scheduled: scheduledMeetings,
@@ -653,7 +725,12 @@ function App() {
       reviewState,
       planningTasks,
       reserveNoticeSchemeStatus,
+      moduleData: readModuleBackupData(),
     }
+  }
+
+  function handleExport() {
+    const exportPayload = buildSystemBackupPayload()
 
     const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
       type: 'application/json',
@@ -664,6 +741,7 @@ function App() {
     link.download = `meeting-manager-export-${formatExportTimestamp()}.json`
     link.click()
     URL.revokeObjectURL(url)
+    toast('完整系统备份已导出（含时间分析与本地任务数据）')
   }
 
   function handleImportData() {
@@ -686,7 +764,7 @@ function App() {
             : null
 
         if (!importedMeetings) {
-          window.alert('导入失败：文件中未找到 meetings 数据。')
+          toast('导入失败：文件中未找到 meetings 数据', 'error')
           return
         }
 
@@ -703,11 +781,16 @@ function App() {
           }
         })
 
-        const overwriteConfirmed = window.confirm(
-          `检测到 ${normalizedMeetings.length} 条会议记录。\n\n恢复系统备份会使用备份内容覆盖当前系统数据。\n点击“确定”继续恢复，点击“取消”放弃导入。`,
-        )
+        const overwriteConfirmed = await confirmDialog({
+          title: '恢复系统备份',
+          message: `检测到 ${normalizedMeetings.length} 条会议记录。\n恢复会用备份内容覆盖当前全部系统数据，且无法撤销。`,
+          confirmLabel: '覆盖并恢复',
+          danger: true,
+        })
 
         if (!overwriteConfirmed) return
+
+        const recoverySaved = saveRecoveryPoint(buildSystemBackupPayload())
 
         setMeetings(normalizedMeetings)
         setScheduledMeetings(Array.isArray(parsed.scheduled) ? parsed.scheduled : [])
@@ -721,10 +804,12 @@ function App() {
         setReviewState(parsed.reviewState ? normalizeReviewState(parsed.reviewState) : DEFAULT_REVIEW_STATE)
         setPlanningTasks(Array.isArray(parsed.planningTasks) ? parsed.planningTasks.map(normalizePlanningTask) : [])
         setReserveNoticeSchemeStatus(normalizeReserveNoticeSchemeStatus(parsed.reserveNoticeSchemeStatus))
+        restoreModuleBackupData(parsed.moduleData)
+        setTimeAnalysisRevision((current) => current + 1)
         appendLog('import', '系统备份', `恢复系统备份，覆盖 ${normalizedMeetings.length} 条会议`)
-        window.alert('系统备份恢复完成。')
+        toast(`系统备份恢复完成，共 ${normalizedMeetings.length} 条会议${recoverySaved ? '；恢复前快照已保留' : ''}`)
       } catch (error) {
-        window.alert(`导入失败：${error.message}`)
+        toast(`导入失败：${error.message}`, 'error')
       }
     }
 
@@ -733,7 +818,7 @@ function App() {
 
   function handleExportReviewPlan() {
     const exportPayload = {
-      version: 'V3.5',
+      version: APP_VERSION_LABEL,
       exportedAt: new Date().toISOString(),
       reviewState,
     }
@@ -765,7 +850,7 @@ function App() {
         const normalized = normalizeReviewState(importedReview)
 
         if (!normalized?.scheduledMeetings || !Array.isArray(normalized.scheduledMeetings)) {
-          window.alert('导入失败：文件中未找到有效的审核排程数据。')
+          toast('导入失败：文件中未找到有效的审核排程数据', 'error')
           return
         }
 
@@ -788,9 +873,9 @@ function App() {
           }
         }
         appendLog('review_import', '审核排程', `导入 ${normalized.scheduledMeetings.length} 条排程方案`)
-        window.alert('审核排程方案导入完成。')
+        toast(`审核排程方案导入完成，共 ${normalized.scheduledMeetings.length} 条`)
       } catch (error) {
-        window.alert(`导入失败：${error.message}`)
+        toast(`导入失败：${error.message}`, 'error')
       }
     }
 
@@ -947,6 +1032,10 @@ function App() {
         noticeTaskOptions={noticeTaskOptions}
         selectedTaskId={selectedNoticeTask?.id ?? ''}
         onTaskChange={setSelectedNoticeTaskId}
+        onGoToPlanner={() => {
+          setActiveTab('planner')
+          setPlanningTab('planner')
+        }}
         noticeTemplates={noticeTemplates}
         disabledNoticeTemplateKeys={disabledNoticeTemplateKeys}
         onUpdateMeeting={(meetingId, patch) => {
@@ -1129,6 +1218,10 @@ function App() {
         taskOptions={taskOptions}
         selectedTaskId={selectedOutlookTask?.id ?? ''}
         onTaskChange={setSelectedOutlookTaskId}
+        onGoToPlanner={() => {
+          setActiveTab('planner')
+          setPlanningTab('planner')
+        }}
         onExportDrafts={(count, format = 'vba') => {
           appendLog(
             'outlook_invite_export',
@@ -1155,57 +1248,8 @@ function App() {
         onExport={handleExport}
       />
       <div className="app-main">
-        <header className="app-page-header">
-          <div className="app-page-header-main">
-            <span className="app-page-kicker">会议管理系统</span>
-            <div className="app-page-copy">
-              <div className="app-page-title-row">
-                <h1>{PAGE_META[activeTab].title}</h1>
-                {pageTabs.length > 0 ? (
-                  <div
-                    className="app-page-tabs"
-                    role="tablist"
-                    aria-label={`${PAGE_META[activeTab].title}模块导航`}
-                  >
-                    {pageTabs.map(({ id, label }) => (
-                      <button
-                        key={id}
-                        className={activePageTab === id ? 'tab-button tab-active' : 'tab-button'}
-                        onClick={() => {
-                          if (activeTab === 'meetings') setMeetingTab(id)
-                          if (activeTab === 'planner') setPlanningTab(id)
-                          if (activeTab === 'logs') setLogsTab(id)
-                        }}
-                        type="button"
-                        role="tab"
-                        aria-selected={activePageTab === id}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <p>{PAGE_META[activeTab].description}</p>
-            </div>
-          </div>
-          <div className="app-page-status" aria-label="系统状态">
-            <span>
-              会议库
-              <strong>{activeMeetings.length}</strong>
-            </span>
-            <span className={reviewConflicts.length > 0 ? 'app-page-status-warning' : ''}>
-              冲突
-              <strong>{reviewConflicts.length}</strong>
-            </span>
-            <span>
-              Version
-              <strong>V3.5</strong>
-            </span>
-          </div>
-        </header>
-
         <div className="app-page-content">
+          <Suspense fallback={<div className="route-loading"><span />正在打开工作区…</div>}>
           {activeTab === 'home' ? (
             <HomeView
               meetings={activeMeetings}
@@ -1226,10 +1270,16 @@ function App() {
               onGoToReserveNotice={() => setActiveTab('reserveNotice')}
               onGoToOutlookInvite={() => setActiveTab('outlookInvite')}
               onGoToContacts={() => setActiveTab('contacts')}
+              onGoToLogs={() => {
+                setActiveTab('logs')
+                setLogsTab('meetings')
+              }}
             />
           ) : activeTab === 'meetings' ? (
             <MeetingsView
               contentTab={meetingTab}
+              tabOptions={meetingTabOptions}
+              onTabChange={setMeetingTab}
               meetings={activeMeetings}
               deletedMeetings={deletedMeetings}
               filters={filters}
@@ -1250,12 +1300,25 @@ function App() {
                     meeting.id === id ? { ...meeting, status: 'active' } : meeting,
                   ),
                 )
-                if (target) appendLog('restore', target.name, '从回收站恢复')
+                if (target) {
+                  appendLog('restore', target.name, '从回收站恢复')
+                  toast(`「${target.name}」已恢复到会议列表`)
+                }
               }}
-              onDeleteMeetingForever={(id) => {
+              onDeleteMeetingForever={async (id) => {
                 const target = meetings.find((meeting) => meeting.id === id)
+                const confirmed = await confirmDialog({
+                  title: '彻底删除会议',
+                  message: `确定彻底删除「${target?.name || '未命名会议'}」吗？此操作无法恢复。`,
+                  confirmLabel: '彻底删除',
+                  danger: true,
+                })
+                if (!confirmed) return
                 setMeetings((current) => current.filter((meeting) => meeting.id !== id))
-                if (target) appendLog('hard_delete', target.name, '从回收站彻底删除')
+                if (target) {
+                  appendLog('hard_delete', target.name, '从回收站彻底删除')
+                  toast(`「${target.name}」已彻底删除`, 'info')
+                }
               }}
               onBatchImport={() => setShowBatchImport(true)}
               onGoToPlanner={() => {
@@ -1279,6 +1342,8 @@ function App() {
             renderReserveNoticeBoard()
           ) : activeTab === 'outlookInvite' ? (
             renderOutlookInviteBoard()
+          ) : activeTab === 'timeAnalysis' ? (
+            <TimeAnalysisWorkbench key={`time-analysis-${timeAnalysisRevision}`} />
           ) : activeTab === 'contacts' ? (
             <ContactsView
               contacts={contacts}
@@ -1294,6 +1359,7 @@ function App() {
               currentPlanningTaskId={currentPlanningTaskId}
               onCreatePlanningTask={createPlanningTaskFromAiState}
               onCreateDraftTask={createPlanningTaskFromAiState}
+              onUpdatePlanningTaskAiState={updateCurrentPlanningTaskAiState}
               onDeletePlanningTask={deletePlanningTask}
               onSelectPlanningTask={(taskId) => {
                 const task = planningTasks.find((item) => item.id === taskId)
@@ -1319,11 +1385,24 @@ function App() {
           ) : (
             <LogsView
               activeSection={logsTab}
+              sectionOptions={logTabOptions}
+              onSectionChange={setLogsTab}
               logs={logs}
-              onClear={() => setLogs([])}
+              onClear={async () => {
+                const confirmed = await confirmDialog({
+                  title: '清空全部日志',
+                  message: `确定清空 ${logs.length} 条操作记录吗？此操作无法恢复。`,
+                  confirmLabel: '清空',
+                  danger: true,
+                })
+                if (!confirmed) return
+                setLogs([])
+                toast('操作日志已清空', 'info')
+              }}
               onDelete={(id) => setLogs((current) => current.filter((log) => log.id !== id))}
             />
           )}
+          </Suspense>
         </div>
       </div>
 
@@ -1376,9 +1455,11 @@ function App() {
             '会议历史记录',
             `批量导入 ${rows.length} 条历史记录${duplicateCount > 0 ? `，其中 ${duplicateCount} 条为重复日期` : ''}`,
           )
+          toast(`已导入 ${rows.length} 条历史记录${duplicateCount > 0 ? `（${duplicateCount} 条重复日期）` : ''}`)
           setShowBatchImport(false)
         }}
       />
+      <FeedbackHost />
     </main>
   )
 }

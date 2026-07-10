@@ -1,0 +1,298 @@
+/* =============================================
+   应用外壳：侧边栏（全新 nx-sidebar）+ 页头再造
+   ============================================= */
+
+/* ---- 侧边栏 ---- */
+.nx-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 14px 16px;
+  background: linear-gradient(180deg, var(--nx-dark) 0%, #071520 100%);
+  box-shadow: inset -1px 0 0 var(--nx-dark-line);
+  color: var(--nx-dark-text);
+}
+
+.nx-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 6px 18px;
+  border-bottom: 1px solid var(--nx-dark-line);
+}
+
+.nx-sidebar-logo {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  border-radius: var(--nx-r-sm);
+  color: var(--nx-dark-accent);
+  background: rgba(45, 212, 191, 0.1);
+}
+
+.nx-sidebar-brand-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.nx-sidebar-brand-copy em {
+  color: var(--nx-dark-accent);
+  font-size: var(--nx-fs-caption);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.nx-sidebar-brand-copy strong {
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nx-sidebar-brand-copy span {
+  color: var(--nx-dark-text-dim);
+  font-size: var(--nx-fs-caption);
+}
+
+.nx-sidebar-toggle {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: var(--nx-dark-text-dim);
+  cursor: pointer;
+  transition:
+    background var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.nx-sidebar-nav {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.nx-sidebar-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: #a7b6c2;
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-sidebar-link svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.nx-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef6fb;
+}
+
+.nx-sidebar-link-active,
+.nx-sidebar-link-active:hover {
+  background: rgba(45, 212, 191, 0.14);
+  color: #ffffff;
+}
+
+.nx-sidebar-link-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 2px;
+  border-radius: var(--nx-r-full);
+  background: var(--nx-dark-accent);
+}
+
+.nx-sidebar-footer {
+  display: grid;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--nx-dark-line);
+}
+
+.nx-sidebar-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  color: #a7b6c2;
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--nx-t-fast) var(--nx-ease),
+    color var(--nx-t-fast) var(--nx-ease);
+}
+
+.nx-sidebar-footer-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.nx-sidebar-footer-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef6fb;
+}
+
+/* 收起态 */
+.nx-sidebar-collapsed {
+  padding: 20px 10px 16px;
+}
+
+.nx-sidebar-collapsed .nx-sidebar-brand {
+  justify-content: center;
+  padding-bottom: 16px;
+}
+
+.nx-sidebar-collapsed .nx-sidebar-link,
+.nx-sidebar-collapsed .nx-sidebar-footer-btn {
+  justify-content: center;
+  padding: 0;
+}
+
+/* ---- 页头（覆盖遗留 .app-page-header）----
+   垂直减薄：kicker 与侧边栏品牌重复，隐藏；
+   标题行与描述并排压缩，为内容区省出高度 */
+.app-shell.app-frame .app-page-header {
+  min-height: 58px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--nx-line);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.app-shell.app-frame .app-page-kicker {
+  display: none;
+}
+
+.app-shell.app-frame .app-page-header-main {
+  gap: 2px;
+}
+
+.app-shell.app-frame .app-page-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-shell.app-frame .app-page-copy h1 {
+  color: var(--nx-ink);
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.app-shell.app-frame .app-page-copy p {
+  margin: 0;
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell.app-frame .app-page-title-row {
+  gap: 16px;
+  align-items: center;
+}
+
+.app-shell.app-frame .app-page-title-row .tab-button {
+  min-height: 32px;
+}
+
+.app-shell.app-frame .app-page-status span,
+.app-shell.app-frame .app-page-status-chip {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-r-sm);
+  background: var(--nx-panel);
+  color: var(--nx-muted);
+  font-size: 12px;
+}
+
+.app-shell.app-frame .app-page-status-chip {
+  cursor: pointer;
+  transition:
+    border-color var(--nx-t-fast) var(--nx-ease),
+    background var(--nx-t-fast) var(--nx-ease);
+}
+
+.app-shell.app-frame .app-page-status-chip:hover {
+  border-color: var(--nx-accent-line);
+  background: var(--nx-accent-soft);
+}
+
+.app-shell.app-frame .app-page-status strong {
+  color: var(--nx-ink);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 页面切换过渡：内容区子元素入场微动效 */
+.app-shell.app-frame .app-page-content > * {
+  animation: nx-page-in 0.22s var(--nx-ease);
+}
+
+@keyframes nx-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

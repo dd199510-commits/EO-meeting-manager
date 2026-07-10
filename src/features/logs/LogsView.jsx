@@ -19,7 +19,16 @@ function formatChangeLine(change) {
   return String(change ?? '')
 }
 
-export function LogsView({ activeSection, logs, onClear, onDelete }) {
+const DANGER_ACTIONS = new Set(['delete', 'hard_delete', 'review_delete'])
+const OK_ACTIONS = new Set(['create', 'restore', 'import', 'review_import', 'batch_import'])
+
+function logTone(actionType) {
+  if (DANGER_ACTIONS.has(actionType)) return 'nx-dot nx-dot-danger'
+  if (OK_ACTIONS.has(actionType)) return 'nx-dot nx-dot-ok'
+  return 'nx-dot nx-dot-info'
+}
+
+export function LogsView({ activeSection, sectionOptions = [], onSectionChange, logs, onClear, onDelete }) {
   const safeLogs = Array.isArray(logs) ? logs.filter(Boolean) : []
 
   const planningActionTypes = new Set(['review', 'review_import', 'review_delete', 'review_move'])
@@ -34,51 +43,68 @@ export function LogsView({ activeSection, logs, onClear, onDelete }) {
   const visibleLogs = activeSection === 'meetings' ? meetingLogs : planningLogs
 
   return (
-    <section className="panel">
-      <div className="section-title">
-        <span className="section-glyph section-glyph-slate" aria-hidden="true">
-          <span className="section-glyph-core" />
-        </span>
-        <h2>操作审计</h2>
-      </div>
-      <div className="logs-topbar">
-        <span className="meetings-secondary-label">
-          {activeSection === 'meetings' ? `${meetingLogs.length} 条会议记录` : `${planningLogs.length} 条排程记录`}
-        </span>
-        <button className="ghost-button danger-button" onClick={onClear} type="button">
-          清空日志
-        </button>
+    <section className="nx-card lv-panel">
+      <div className="nx-section-head lv-head">
+        <div className="lv-title-group">
+          <span className="nx-section-title">操作审计</span>
+          {sectionOptions.length > 0 ? (
+            <div className="module-tabs lv-section-tabs" role="tablist" aria-label="记录类型切换">
+              {sectionOptions.map(({ id, label }) => (
+                <button
+                  key={id}
+                  className={activeSection === id ? 'module-tab module-tab-active' : 'module-tab'}
+                  onClick={() => onSectionChange?.(id)}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeSection === id}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="lv-head-actions">
+          <span className="nx-section-count">
+            {activeSection === 'meetings' ? `${meetingLogs.length} 条会议记录` : `${planningLogs.length} 条排程记录`}
+          </span>
+          <button className="nx-btn nx-btn-danger" onClick={onClear} type="button">
+            清空日志
+          </button>
+        </div>
       </div>
       {visibleLogs.length === 0 ? (
-        <div className="empty-state">暂无操作记录。</div>
+        <div className="nx-empty">暂无操作记录。</div>
       ) : (
-        <div className="log-list">
+        <div className="nx-rows">
           {visibleLogs.map((log) => (
-            <div key={log.id} className="log-item">
-              <div className="log-main">
-                <span className={`log-badge log-badge-${log.actionType}`} aria-hidden="true">
-                  <span className="log-badge-core" />
-                </span>
-                <div className="log-content">
-                  <div className="log-line">
-                    <strong>{log.targetName || '未命名对象'}</strong>
-                    <span className="log-action-text">{getActionLabel(log.actionType)}</span>
-                    <span className="log-detail">{log.detail || '无变更摘要'}</span>
-                  </div>
-                  {activeSection === 'meetings' && Array.isArray(log.changes) && log.changes.length ? (
-                    <div className="log-changes">
-                      {log.changes.map((change, index) => (
-                        <div key={`${log.id}-${index}`} className="log-change-line">
-                          {formatChangeLine(change)}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
+            <div key={log.id} className="nx-row lv-row">
+              <span className={logTone(log.actionType)} aria-hidden="true" />
+              <div className="nx-row-main">
+                <div className="lv-line">
+                  <strong>{log.targetName || '未命名对象'}</strong>
+                  <span className="nx-badge">{getActionLabel(log.actionType)}</span>
+                  <span className="lv-detail">{log.detail || '无变更摘要'}</span>
                 </div>
+                {activeSection === 'meetings' && Array.isArray(log.changes) && log.changes.length ? (
+                  <div className="lv-changes">
+                    {log.changes.map((change, index) => (
+                      <div key={`${log.id}-${index}`} className="lv-change-line">
+                        {formatChangeLine(change)}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-              <div className="log-meta">
+              <div className="lv-meta">
                 <span>{formatTimestamp(log.timestamp)}</span>
-                <button className="icon-button danger log-delete-button" onClick={() => onDelete(log.id)} type="button">
+                <button
+                  className="nx-btn nx-btn-danger lv-delete"
+                  onClick={() => onDelete(log.id)}
+                  type="button"
+                  aria-label="删除这条记录"
+                  title="删除这条记录"
+                >
                   <Trash2 size={14} />
                 </button>
               </div>

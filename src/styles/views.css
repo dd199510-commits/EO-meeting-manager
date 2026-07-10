@@ -1,0 +1,422 @@
+/* =============================================
+   重建视图样式：通讯录（cv-*）/ 记录（lv-*）
+   ============================================= */
+
+/* ---- 表单字段 ---- */
+.nx-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nx-field > span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  font-weight: 600;
+}
+
+.nx-field textarea.nx-input {
+  min-height: 72px;
+  resize: vertical;
+}
+
+/* ---- 通讯录 ---- */
+.cv-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.cv-list-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.cv-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cv-toolbar-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.cv-toolbar-copy strong {
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-title);
+  font-weight: 600;
+}
+
+.cv-toolbar-copy span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.cv-search {
+  position: relative;
+}
+
+.cv-search svg {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  transform: translateY(-50%);
+  color: var(--nx-soft);
+  pointer-events: none;
+}
+
+.cv-search .nx-input {
+  width: 100%;
+  padding-left: 34px;
+}
+
+.cv-rows {
+  display: grid;
+  gap: 0;
+}
+
+.cv-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 8px;
+  border: 0;
+  border-top: 1px solid var(--nx-divider);
+  border-radius: var(--nx-r-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--nx-t-fast) var(--nx-ease);
+}
+
+.cv-rows > .cv-row:first-child {
+  border-top: 0;
+}
+
+.cv-row:hover {
+  background: var(--nx-panel-soft);
+}
+
+.cv-row-active,
+.cv-row-active:hover {
+  background: var(--nx-accent-soft);
+}
+
+.cv-avatar {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  flex: 0 0 auto;
+}
+
+.cv-row-active .cv-avatar {
+  background: rgba(15, 148, 142, 0.14);
+  color: var(--nx-accent-strong);
+}
+
+.cv-row-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cv-row-main strong {
+  color: var(--nx-ink-2);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-row-main em {
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- 通讯录编辑器 ---- */
+.cv-editor-panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.cv-editor-head {
+  display: grid;
+  gap: 3px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--nx-divider);
+}
+
+.cv-editor-head strong {
+  color: var(--nx-ink);
+  font-size: var(--nx-fs-title);
+  font-weight: 600;
+}
+
+.cv-editor-head span {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.cv-editor-form {
+  display: grid;
+  gap: 12px;
+}
+
+.cv-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cv-secretaries {
+  display: grid;
+  gap: 8px;
+}
+
+.cv-secretary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.cv-secretary-remove {
+  min-height: 32px;
+  padding: 0 8px;
+}
+
+.cv-editor-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--nx-divider);
+}
+
+@media (max-width: 980px) {
+  .cv-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .cv-editor-panel {
+    position: static;
+  }
+}
+
+/* ---- 记录页 ---- */
+.lv-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.lv-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.lv-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lv-section-tabs .module-tab {
+  min-height: 26px;
+  padding-inline: 9px;
+}
+
+.lv-row {
+  align-items: start;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.lv-row > .nx-dot {
+  margin-top: 6px;
+}
+
+.lv-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lv-line strong {
+  color: var(--nx-ink-2);
+  font-size: var(--nx-fs-body);
+  font-weight: 500;
+}
+
+.lv-detail {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lv-changes {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--nx-divider);
+}
+
+.lv-change-line {
+  color: var(--nx-muted);
+  font-size: var(--nx-fs-caption);
+}
+
+.lv-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--nx-soft);
+  font-size: var(--nx-fs-caption);
+  white-space: nowrap;
+}
+
+.lv-delete {
+  min-height: 28px;
+  padding: 0 7px;
+  opacity: 0;
+  transition: opacity var(--nx-t-fast) var(--nx-ease);
+}
+
+.lv-row:hover .lv-delete,
+.lv-delete:focus-visible {
+  opacity: 1;
+}
+
+/* ---- 回收站（tv-*）---- */
+.tv-section {
+  display: grid;
+  gap: 12px;
+}
+
+.tv-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.tv-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.tv-actions .nx-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: var(--nx-fs-caption);
+}
+
+/* ---- 会议库高级筛选（fp-*）---- */
+.fp-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.fp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fp-span-2 {
+  grid-column: span 3;
+}
+
+.fp-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fp-checks .mv-chip {
+  cursor: pointer;
+}
+
+.fp-check-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--nx-divider);
+}
+
+@media (max-width: 900px) {
+  .fp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fp-span-2 {
+    grid-column: auto;
+  }
+}
+
+/* ---- 通讯录空态快捷新建 ---- */
+.cv-empty {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cv-empty .nx-btn {
+  min-height: 30px;
+  font-size: var(--nx-fs-caption);
+}
+
+/* ---- 主列表保持白色，编辑/详情区退为辅助表面 ---- */
+.app-shell.app-frame .cv-list-panel,
+.app-shell.app-frame .lv-panel {
+  border: 1px solid var(--nx-line-work);
+  background: var(--nx-surface-work);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.app-shell.app-frame .cv-editor-panel,
+.app-shell.app-frame .fp-panel {
+  border: 0;
+  background: var(--nx-surface-context);
+  box-shadow: none;
+}
+
+.app-shell.app-frame .cv-row-active,
+.app-shell.app-frame .cv-row-active:hover {
+  background: var(--nx-surface-selected);
+  box-shadow: inset 3px 0 0 var(--nx-accent);
+}
