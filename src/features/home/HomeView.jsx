@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { APP_VERSION_LABEL } from '../../lib/appVersion'
 
-const homeLogoSrc = '/home-eo-logo-cutout.png'
+const homeLogoSrc = `${import.meta.env.BASE_URL}home-eo-logo-cutout.png`
 
 function isMeetingIncomplete(meeting) {
   const hasAttendees = String(meeting.attendees || '').trim() || meeting.attendeeRefs?.length > 0
