@@ -22,6 +22,10 @@ import {
   validateImportedSchedule,
 } from '../aiScheduler/aiSchedulerUtils'
 import { generateScheduleInstances } from '../schedule/scheduleUtils'
+import {
+  normalizePlanningInputMeetings,
+  normalizePlanningRange,
+} from './planningTaskData'
 
 function buildPlanningSourceSignature(meetings) {
   return JSON.stringify(
@@ -1177,13 +1181,14 @@ export function PlanningWorkbench({
 
   function openPlanningTask(task) {
     onSelectPlanningTask?.(task.id)
-    if (task.aiState?.inputMeetings?.timeRange) {
-      setRange(task.aiState.inputMeetings.timeRange)
-      setGeneratedInstances(task.aiState.inputMeetings.meetings ?? [])
-      setGeneratedSourceSignature(task.aiState.inputMeetings.metadata?.sourceSignature ?? '')
+    const storedInput = normalizePlanningInputMeetings(task.aiState?.inputMeetings)
+    if (storedInput) {
+      setRange(storedInput.timeRange)
+      setGeneratedInstances(storedInput.meetings)
+      setGeneratedSourceSignature(storedInput.metadata.sourceSignature)
     } else {
-      const nextRange = task.timeRange ?? EMPTY_RANGE
-      setRange({ ...nextRange })
+      const nextRange = normalizePlanningRange(task.timeRange)
+      setRange(nextRange ?? { ...EMPTY_RANGE })
       setGeneratedInstances([])
       setGeneratedSourceSignature('')
       setAiState((current) => ({

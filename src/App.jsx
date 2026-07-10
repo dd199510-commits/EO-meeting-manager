@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { CalendarDays } from 'lucide-react'
 import './App.css'
 import './styles/index.css'
 import { AppSidebar } from './components/AppSidebar'
@@ -26,6 +27,10 @@ import {
   readReviewState,
 } from './features/review/reviewUtils'
 import { TrashView } from './features/trash/TrashView'
+import {
+  normalizePlanningInputMeetings,
+  normalizePlanningRange,
+} from './features/planner/planningTaskData'
 import { detectConflicts } from './lib/conflicts'
 import { normalizeContact, resolveAttendeeRefs } from './lib/contacts'
 import { calculateNextOccurrence, syncMeetingAnchorDate } from './lib/meetingFrequency'
@@ -48,18 +53,63 @@ const TimeAnalysisWorkbench = lazy(() => import('./features/timeAnalysis').then(
 const PLANNING_TASKS_STORAGE_KEY = 'meeting-manager:planning-tasks:v1'
 const RESERVE_NOTICE_SCHEME_STATUS_KEY = 'meeting-manager:reserve-notice-scheme-status:v1'
 
+class PlannerErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidUpdate(previousProps) {
+    if (this.state.hasError && previousProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false })
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <section className="panel empty-state">
+          <CalendarDays size={28} />
+          <h3>这个排程任务的数据暂时无法显示</h3>
+          <p>系统已拦截异常数据，其他页面不受影响。返回任务中心后可重新生成清单。</p>
+          <button type="button" className="primary-button" onClick={this.props.onReset}>
+            返回排程任务中心
+          </button>
+        </section>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 function normalizePlanningTask(task) {
   const now = new Date().toISOString()
-  const range = task?.timeRange ?? task?.aiState?.inputMeetings?.timeRange ?? null
+  const normalizedAiState = task?.aiState ? normalizeAiState(task.aiState) : null
+  const normalizedInputMeetings = normalizePlanningInputMeetings(normalizedAiState?.inputMeetings)
+  const aiState = normalizedAiState
+    ? {
+        ...normalizedAiState,
+        inputMeetings: normalizedInputMeetings,
+      }
+    : null
+  const range = normalizePlanningRange(task?.timeRange) ?? normalizedInputMeetings?.timeRange ?? null
+  const generatedCount = normalizedInputMeetings?.meetings.length ?? 0
 
   return {
     id: task?.id || `planning-task-${crypto.randomUUID()}`,
     name: task?.name || (range ? `${range.start} 至 ${range.end}` : '未命名排程任务'),
     status: task?.status || 'draft',
     timeRange: range,
-    aiState: task?.aiState ?? null,
+    aiState,
     reviewState: task?.reviewState ? normalizeReviewState(task.reviewState) : null,
-    generatedCount: Number(task?.generatedCount ?? task?.aiState?.inputMeetings?.meetings?.length ?? 0),
+    generatedCount: Number.isFinite(Number(task?.generatedCount))
+      ? Math.max(0, Number(task.generatedCount))
+      : generatedCount,
     scheduledCount: Number(task?.scheduledCount ?? task?.reviewState?.scheduledMeetings?.length ?? 0),
     createdAt: task?.createdAt || now,
     updatedAt: task?.updatedAt || now,
@@ -193,6 +243,7 @@ function App() {
   const [isEditModalClosing, setIsEditModalClosing] = useState(false)
   const [showBatchImport, setShowBatchImport] = useState(false)
   const [timeAnalysisRevision, setTimeAnalysisRevision] = useState(0)
+  const [plannerRecoveryRevision, setPlannerRecoveryRevision] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => typeof window !== 'undefined' && window.localStorage.getItem('meeting-manager:ui:sidebar-collapsed:v1') === '1',
   )
@@ -1351,37 +1402,47 @@ function App() {
               onDeleteContact={handleDeleteContact}
             />
           ) : activeTab === 'planner' ? (
-            <PlanningWorkbench
-              meetings={meetings}
-              aiState={aiState}
-              setAiState={setAiState}
-              planningTasks={planningTasks}
-              currentPlanningTaskId={currentPlanningTaskId}
-              onCreatePlanningTask={createPlanningTaskFromAiState}
-              onCreateDraftTask={createPlanningTaskFromAiState}
-              onUpdatePlanningTaskAiState={updateCurrentPlanningTaskAiState}
-              onDeletePlanningTask={deletePlanningTask}
-              onSelectPlanningTask={(taskId) => {
-                const task = planningTasks.find((item) => item.id === taskId)
-                setCurrentPlanningTaskId(taskId)
-                if (task?.aiState) setAiState(normalizeAiState(task.aiState))
-                else setAiState((current) => clearAiPlanningState(current))
-                if (task?.reviewState) setReviewState(normalizeReviewState(task.reviewState))
-                else setReviewState(DEFAULT_REVIEW_STATE)
+            <PlannerErrorBoundary
+              resetKey={plannerRecoveryRevision}
+              onReset={() => {
+                setCurrentPlanningTaskId('')
+                setAiState((current) => clearAiPlanningState(current))
+                setReviewState(DEFAULT_REVIEW_STATE)
+                setPlannerRecoveryRevision((current) => current + 1)
               }}
-              renderReviewBoard={renderReviewBoard}
-              onApplyAiSchedule={(nextAiState, options) => {
-                setAiState(nextAiState)
-                appendLog(
-                  'ai_schedule',
-                  'AI 排程',
-                  `接收 ${nextAiState.scheduledMeetings?.scheduledMeetings?.length ?? 0} 条后台结果`,
-                )
-                if (options?.importToReview) {
-                  importAiStateToReview(nextAiState, { openReview: true })
-                }
-              }}
-            />
+            >
+              <PlanningWorkbench
+                meetings={meetings}
+                aiState={aiState}
+                setAiState={setAiState}
+                planningTasks={planningTasks}
+                currentPlanningTaskId={currentPlanningTaskId}
+                onCreatePlanningTask={createPlanningTaskFromAiState}
+                onCreateDraftTask={createPlanningTaskFromAiState}
+                onUpdatePlanningTaskAiState={updateCurrentPlanningTaskAiState}
+                onDeletePlanningTask={deletePlanningTask}
+                onSelectPlanningTask={(taskId) => {
+                  const task = planningTasks.find((item) => item.id === taskId)
+                  setCurrentPlanningTaskId(taskId)
+                  if (task?.aiState) setAiState(normalizeAiState(task.aiState))
+                  else setAiState((current) => clearAiPlanningState(current))
+                  if (task?.reviewState) setReviewState(normalizeReviewState(task.reviewState))
+                  else setReviewState(DEFAULT_REVIEW_STATE)
+                }}
+                renderReviewBoard={renderReviewBoard}
+                onApplyAiSchedule={(nextAiState, options) => {
+                  setAiState(nextAiState)
+                  appendLog(
+                    'ai_schedule',
+                    'AI 排程',
+                    `接收 ${nextAiState.scheduledMeetings?.scheduledMeetings?.length ?? 0} 条后台结果`,
+                  )
+                  if (options?.importToReview) {
+                    importAiStateToReview(nextAiState, { openReview: true })
+                  }
+                }}
+              />
+            </PlannerErrorBoundary>
           ) : (
             <LogsView
               activeSection={logsTab}
