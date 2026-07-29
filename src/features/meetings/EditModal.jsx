@@ -30,23 +30,11 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-    const today = new Date()
-    const todayValue = [
-      today.getFullYear(),
-      String(today.getMonth() + 1).padStart(2, '0'),
-      String(today.getDate()).padStart(2, '0'),
-    ].join('-')
     const invalidDates = inputDates.filter((item) => !/^\d{4}-\d{2}-\d{2}$/.test(item))
-    const futureDates = inputDates.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && item > todayValue)
-    const dates = inputDates.filter(
-      (item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && item <= todayValue,
-    )
+    const dates = inputDates.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item))
 
-    if (invalidDates.length > 0 || futureDates.length > 0) {
-      const messages = []
-      if (invalidDates.length > 0) messages.push(`日期格式不正确：${invalidDates.join('、')}`)
-      if (futureDates.length > 0) messages.push(`未来日期不能作为历史记录：${futureDates.join('、')}`)
-      setHistoryError(messages.join('；'))
+    if (invalidDates.length > 0) {
+      setHistoryError(`日期格式不正确：${invalidDates.join('、')}`)
     } else {
       setHistoryError('')
     }
@@ -418,6 +406,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                     添加历史
                   </button>
                 </div>
+                <div className="rule-helper-text">支持添加过去或未来日期，多个日期请用逗号分隔。</div>
                 {historyError ? <div className="warning-text rule-warning-text">{historyError}</div> : null}
                 <div className="inline-history-list">
                   {(formData.history ?? []).length === 0 ? <div className="empty-state">暂无历史记录</div> : null}
