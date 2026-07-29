@@ -114,6 +114,12 @@ try {
       expected: '2026-08-07',
     },
     {
+      name: '未来月会历史记录按录入周期推进到下月',
+      meeting: createMeeting('monthly', 1, 10, '2026-08-10', ['2026-08-17']),
+      referenceDate: '2026-07-29',
+      expected: '2026-09-10',
+    },
+    {
       name: '没有历史记录的未来年会保留首次计划日',
       meeting: {
         ...createMeeting('yearly', 1, 14, '2026-12-14', []),
@@ -126,7 +132,7 @@ try {
       expected: '2026-12-14',
     },
     {
-      name: '晚于基准日的历史日期不应被视为已经发生',
+      name: '未来年会历史记录按录入周期推进到下一年',
       meeting: {
         ...createMeeting('yearly', 1, 14, '2026-12-14', ['2026-05-10', '2026-12-14']),
         frequency: {
@@ -135,10 +141,10 @@ try {
         },
       },
       referenceDate: '2026-07-10',
-      expected: '2026-12-14',
+      expected: '2027-12-14',
     },
     {
-      name: '无法归属到计划月份的历史日期不应跳过未来年会',
+      name: '多条年会历史记录以最新录入周期为准',
       meeting: {
         ...createMeeting('yearly', 1, 15, '2026-11-15', ['2026-06-11', '2026-11-15']),
         frequency: {
@@ -147,7 +153,7 @@ try {
         },
       },
       referenceDate: '2026-07-10',
-      expected: '2026-11-15',
+      expected: '2027-11-15',
     },
     {
       name: '季度会议提前发生后跳过所属月份的计划日',
@@ -169,9 +175,20 @@ try {
   })
 
   const monthlyMeeting = cases[0].meeting
-  const julyOccurrences = generateOccurrencesInRange(monthlyMeeting, '2026-07-01', '2026-07-31', '2026-07-04')
-  const augustOccurrences = generateOccurrencesInRange(monthlyMeeting, '2026-08-01', '2026-08-31', '2026-07-04')
+  const julyOccurrences = generateOccurrencesInRange(monthlyMeeting, '2026-07-01', '2026-07-31')
+  const augustOccurrences = generateOccurrencesInRange(monthlyMeeting, '2026-08-01', '2026-08-31')
   const stableAnchor = syncMeetingAnchorDate(monthlyMeeting).frequency.anchorDate
+  const futureHistoryMonthlyMeeting = cases.find((item) => item.name === '未来月会历史记录按录入周期推进到下月').meeting
+  const futureHistoryAugustOccurrences = generateOccurrencesInRange(
+    futureHistoryMonthlyMeeting,
+    '2026-08-01',
+    '2026-08-31',
+  )
+  const futureHistorySeptemberOccurrences = generateOccurrencesInRange(
+    futureHistoryMonthlyMeeting,
+    '2026-09-01',
+    '2026-09-30',
+  )
 
   if (julyOccurrences.length !== 0) {
     failures.push({ name: '已提前完成的月度周期不应再次进入排程', expected: [], actual: julyOccurrences })
@@ -182,12 +199,26 @@ try {
   if (stableAnchor !== '2026-05-07') {
     failures.push({ name: '实际发生日期不得改写起始参考日', expected: '2026-05-07', actual: stableAnchor })
   }
+  if (futureHistoryAugustOccurrences.length !== 0) {
+    failures.push({
+      name: '录入未来月会历史后不应保留同月计划日',
+      expected: [],
+      actual: futureHistoryAugustOccurrences,
+    })
+  }
+  if (JSON.stringify(futureHistorySeptemberOccurrences) !== JSON.stringify(['2026-09-10'])) {
+    failures.push({
+      name: '录入未来月会历史后应从下月继续排程',
+      expected: ['2026-09-10'],
+      actual: futureHistorySeptemberOccurrences,
+    })
+  }
 
   if (failures.length > 0) {
     console.error(JSON.stringify({ failures }, null, 2))
     process.exitCode = 1
   } else {
-    console.log(JSON.stringify({ passed: cases.length + 3 }, null, 2))
+    console.log(JSON.stringify({ passed: cases.length + 5 }, null, 2))
   }
 } finally {
   await server.close()
