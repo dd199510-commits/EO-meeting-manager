@@ -231,13 +231,9 @@ function getInitialCadenceOccurrences(frequency, anchorDate, throughDate) {
   return occurrences
 }
 
-function getLatestHistoryDate(meeting, cutoffDate) {
-  const cutoff = parseDateInput(cutoffDate)
+function getLatestHistoryDate(meeting) {
   const history = Array.isArray(meeting.history) ? meeting.history : []
-  return getLatestDate(history.filter((value) => {
-    const date = parseDateInput(value)
-    return date && (!cutoff || date <= cutoff)
-  }))
+  return getLatestDate(history)
 }
 
 export function syncMeetingAnchorDate(meeting) {
@@ -275,7 +271,9 @@ export function calculateNextOccurrence(meeting, referenceDate = new Date()) {
   }
 
   const todayDate = parseDateInput(today)
-  const latestHistoryDate = getLatestHistoryDate(normalized, todayDate)
+  // 历史记录入口支持录入过去或未来日期；一旦录入，就以最新一条
+  // 记录所在的频次周期作为下次发生日期的计算起点。
+  const latestHistoryDate = getLatestHistoryDate(normalized)
 
   if (type === 'yearly') {
     const searchEnd = addYears(todayDate, Math.max(interval, 1) * 5)
@@ -338,7 +336,7 @@ export function formatNextDateInfo(dateValue, referenceDate = new Date()) {
   }
 }
 
-export function generateOccurrencesInRange(meeting, startDate, endDate, referenceDate = new Date()) {
+export function generateOccurrencesInRange(meeting, startDate, endDate) {
   const normalized = syncMeetingAnchorDate(meeting)
   const frequency = normalized.frequency
   const type = frequency.type
@@ -349,7 +347,7 @@ export function generateOccurrencesInRange(meeting, startDate, endDate, referenc
 
   const start = parseDateInput(startDate)
   const end = parseDateInput(endDate)
-  const latestHistoryDate = getLatestHistoryDate(normalized, referenceDate)
+  const latestHistoryDate = getLatestHistoryDate(normalized)
 
   if (type === 'yearly') {
     const initialOccurrences = () => getYearlyOccurrences(frequency, start, end, frequency.anchorDate)
