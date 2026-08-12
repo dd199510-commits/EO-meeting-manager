@@ -9,6 +9,7 @@ const PUBLIC_DATA_KEYS = [
   'meeting-manager:logs:v1',
   'meeting-manager:planning-tasks:v1',
   'meeting-manager:reserve-notice-scheme-status:v1',
+  'meeting-manager:reserve-notice-scheme-settings:v1',
   'meeting-manager:time-analysis-records:v2',
   'meeting-manager:time-analysis-filters:v1',
   'meeting-manager:time-analysis-saved-views:v1',
