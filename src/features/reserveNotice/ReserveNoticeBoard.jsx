@@ -11,6 +11,11 @@ import {
   NOTICE_VARIABLE_OPTIONS,
   normalizeNoticeTemplates,
 } from './notificationTemplates'
+import {
+  buildNoticeContextMeeting,
+  normalizeNoticeRowSettings,
+  resolveNoticeRowSource,
+} from './noticeSettings'
 
 function weekdayLabel(dateString) {
   const date = new Date(dateString)
@@ -149,6 +154,7 @@ export function ReserveNoticeBoard({
   disabledNoticeTemplateKeys = [],
   onToggleSent,
   onUpdateMeeting,
+  onUpdateAdhocNoticeSettings,
   onSaveTemplates,
   onGoToPlanner,
 }) {
@@ -172,6 +178,10 @@ export function ReserveNoticeBoard({
     () => selectedScheme?.reserveNoticeStatus ?? {},
     [selectedScheme],
   )
+  const reserveNoticeSettings = useMemo(
+    () => selectedScheme?.reserveNoticeSettings ?? {},
+    [selectedScheme],
+  )
   const meetingMap = useMemo(() => new Map(meetings.map((meeting) => [meeting.id, meeting])), [meetings])
   const mergedTemplates = useMemo(
     () => getMergedNoticeTemplates(noticeTemplates, disabledNoticeTemplateKeys),
@@ -192,16 +202,21 @@ export function ReserveNoticeBoard({
           left.date.localeCompare(right.date) || left.startTime.localeCompare(right.startTime),
       )
       .forEach((scheduledMeeting) => {
-        const sourceMeeting = scheduledMeeting.meetingId ? meetingMap.get(scheduledMeeting.meetingId) : null
-        const groupId = scheduledMeeting.meetingId
-          ? `meeting:${scheduledMeeting.meetingId}`
-          : `adhoc:${scheduledMeeting.id}`
+        const { rowId: groupId, sourceMeeting, settings, isIndependent } = resolveNoticeRowSource(
+          scheduledMeeting,
+          meetingMap,
+          reserveNoticeSettings,
+        )
 
         if (!grouped.has(groupId)) {
-          const templateKey = resolveTemplateKey(sourceMeeting, scheduledMeeting, mergedTemplates)
+          const contextMeeting = buildNoticeContextMeeting(sourceMeeting, scheduledMeeting, settings)
+          const templateKey = resolveTemplateKey(contextMeeting, scheduledMeeting, mergedTemplates)
           grouped.set(groupId, {
             id: groupId,
             meeting: sourceMeeting,
+            contextMeeting,
+            noticeSettings: settings,
+            isIndependent,
             scheduledMeeting,
             sent: Boolean(reserveNoticeStatus[groupId]),
             template: mergedTemplates[templateKey] ?? BUILT_IN_NOTICE_TEMPLATES.general,
@@ -215,10 +230,10 @@ export function ReserveNoticeBoard({
     return Array.from(grouped.values()).map((row) => ({
       ...row,
       tokens: extractTemplateTokens(row.template.content),
-      context: buildNoticeContext(row.template, row.meeting, row.scheduledMeeting, row.occurrences),
-      text: buildNoticeText(row.template, row.meeting, row.scheduledMeeting, row.occurrences),
+      context: buildNoticeContext(row.template, row.contextMeeting, row.scheduledMeeting, row.occurrences),
+      text: buildNoticeText(row.template, row.contextMeeting, row.scheduledMeeting, row.occurrences),
     }))
-  }, [meetingMap, mergedTemplates, reserveNoticeStatus, scheduledMeetings])
+  }, [meetingMap, mergedTemplates, reserveNoticeSettings, reserveNoticeStatus, scheduledMeetings])
 
   const filteredRows = useMemo(() => {
     return rows.filter((row) => {
@@ -241,20 +256,24 @@ export function ReserveNoticeBoard({
     filteredRows[0] ??
     null
   const selectedDraft =
-    selectedRow?.meeting && draftNoticeSettings?.rowId === selectedRow.id ? draftNoticeSettings : null
+    selectedRow &&
+    draftNoticeSettings?.rowId === selectedRow.id &&
+    draftNoticeSettings?.schemeId === selectedScheme?.id
+      ? draftNoticeSettings
+      : null
   const selectedPreviewMeeting = useMemo(
     () =>
-      selectedRow?.meeting
+      selectedRow
         ? {
-            ...selectedRow.meeting,
-            notificationTemplateKey: selectedDraft?.templateKey ?? selectedRow.meeting.notificationTemplateKey ?? '',
+            ...selectedRow.contextMeeting,
+            notificationTemplateKey: selectedDraft?.templateKey ?? selectedRow.noticeSettings.templateKey,
             notificationConfig: {
-              ...(selectedRow.meeting.notificationConfig ?? {}),
-              executiveName: selectedDraft?.executiveName ?? selectedRow.meeting.notificationConfig?.executiveName ?? '',
-              secretaryName: selectedDraft?.secretaryName ?? selectedRow.meeting.notificationConfig?.secretaryName ?? '',
+              ...(selectedRow.contextMeeting.notificationConfig ?? {}),
+              executiveName: selectedDraft?.executiveName ?? selectedRow.noticeSettings.executiveName,
+              secretaryName: selectedDraft?.secretaryName ?? selectedRow.noticeSettings.secretaryName,
             },
           }
-        : selectedRow?.meeting ?? null,
+        : null,
     [selectedDraft, selectedRow],
   )
   const selectedPreviewTemplateKey = selectedRow
@@ -299,12 +318,33 @@ export function ReserveNoticeBoard({
   function handleTaskChange(taskId) {
     setSelectedId('')
     setSelectedSchemeId('')
+    setDraftNoticeSettings(null)
     onTaskChange?.(taskId)
   }
 
   function handleSchemeChange(schemeId) {
     setSelectedId('')
     setSelectedSchemeId(schemeId)
+    setDraftNoticeSettings(null)
+  }
+
+  function saveSelectedNoticeSettings(nextSettings) {
+    if (!selectedRow) return
+
+    const normalizedSettings = normalizeNoticeRowSettings(nextSettings)
+    if (!selectedRow.isIndependent && selectedRow.meeting) {
+      onUpdateMeeting?.(selectedRow.meeting.id, {
+        notificationTemplateKey: normalizedSettings.templateKey,
+        notificationConfig: {
+          ...(selectedRow.meeting.notificationConfig ?? {}),
+          executiveName: normalizedSettings.executiveName,
+          secretaryName: normalizedSettings.secretaryName,
+        },
+      })
+      return
+    }
+
+    onUpdateAdhocNoticeSettings?.(selectedRow.id, normalizedSettings, selectedScheme)
   }
 
   if (noticeTaskOptions.length === 0 || schemeOptions.length === 0) {
@@ -551,28 +591,24 @@ export function ReserveNoticeBoard({
                 </div>
 
                 <div className="reserve-notice-preview-side">
-                  {selectedRow.meeting ? (
-                    <ReserveNoticeSettings
-                      key={selectedRow.meeting.id}
-                      rowId={selectedRow.id}
-                      meeting={selectedPreviewMeeting}
-                      templateOptions={templateOptions}
-                      onUpdateMeeting={onUpdateMeeting}
-                      onOpenTemplateManager={() => setShowTemplateManager(true)}
-                      onDraftChange={setDraftNoticeSettings}
-                    />
-                  ) : null}
+                  <ReserveNoticeSettings
+                    key={`${selectedScheme?.id ?? 'scheme'}:${selectedRow.id}`}
+                    schemeId={selectedScheme?.id ?? ''}
+                    rowId={selectedRow.id}
+                    settings={selectedRow.noticeSettings}
+                    isIndependent={selectedRow.isIndependent}
+                    templateOptions={templateOptions}
+                    onSave={saveSelectedNoticeSettings}
+                    onOpenTemplateManager={() => setShowTemplateManager(true)}
+                    onDraftChange={setDraftNoticeSettings}
+                  />
 
-                  {selectedRow.meeting ? (
-                    <ReserveNoticeTemplateSource selectedTemplate={selectedPreviewTemplate} />
-                  ) : null}
+                  <ReserveNoticeTemplateSource selectedTemplate={selectedPreviewTemplate} />
 
-                  {selectedRow.meeting ? (
-                    <ReserveNoticeVariableMapping
-                      templateTokens={selectedPreviewTokens}
-                      templateContext={selectedPreviewContext}
-                    />
-                  ) : null}
+                  <ReserveNoticeVariableMapping
+                    templateTokens={selectedPreviewTokens}
+                    templateContext={selectedPreviewContext}
+                  />
                 </div>
               </div>
             </>
@@ -601,19 +637,23 @@ export function ReserveNoticeBoard({
 }
 
 function ReserveNoticeSettings({
+  schemeId,
   rowId,
-  meeting,
-  onUpdateMeeting,
+  settings,
+  isIndependent,
   templateOptions,
+  onSave,
   onOpenTemplateManager,
   onDraftChange,
 }) {
-  const [templateKey, setTemplateKey] = useState(meeting.notificationTemplateKey ?? '')
-  const [executiveName, setExecutiveName] = useState(meeting.notificationConfig?.executiveName ?? '')
-  const [secretaryName, setSecretaryName] = useState(meeting.notificationConfig?.secretaryName ?? '')
+  const normalizedSettings = normalizeNoticeRowSettings(settings)
+  const [templateKey, setTemplateKey] = useState(normalizedSettings.templateKey)
+  const [executiveName, setExecutiveName] = useState(normalizedSettings.executiveName)
+  const [secretaryName, setSecretaryName] = useState(normalizedSettings.secretaryName)
 
   function syncDraft(patch = {}) {
     onDraftChange?.({
+      schemeId,
       rowId,
       templateKey: patch.templateKey ?? templateKey,
       executiveName: patch.executiveName ?? executiveName,
@@ -622,24 +662,22 @@ function ReserveNoticeSettings({
   }
 
   function saveNotificationConfig() {
-    if (!onUpdateMeeting) return
-
-    onUpdateMeeting(meeting.id, {
-      notificationTemplateKey: templateKey,
-      notificationConfig: {
-        ...(meeting.notificationConfig ?? {}),
-        executiveName: executiveName.trim(),
-        secretaryName: secretaryName.trim(),
-      },
+    onSave?.({
+      templateKey,
+      executiveName: executiveName.trim(),
+      secretaryName: secretaryName.trim(),
     })
   }
 
   return (
     <div className="reserve-notice-settings">
       <div className="reserve-notice-settings-head">
-        <strong>通知设置</strong>
+        <div>
+          <strong>通知设置</strong>
+          {isIndependent ? <span>独立保存，不会修改会议库中的同名会议</span> : null}
+        </div>
         <button className="ghost-button" onClick={saveNotificationConfig}>
-          保存设置
+          {isIndependent ? '保存到本次排程' : '保存设置'}
         </button>
       </div>
       <div className="reserve-notice-settings-grid">

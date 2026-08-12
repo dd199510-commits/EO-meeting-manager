@@ -19,6 +19,7 @@ import { createLog, persistLogs, readLogs } from './features/logs/logUtils'
 import { MeetingsView } from './features/meetings/MeetingsView'
 import { EditModal } from './features/meetings/EditModal'
 import { normalizeNoticeTemplates } from './features/reserveNotice/notificationTemplates'
+import { normalizeNoticeSettingsStore } from './features/reserveNotice/noticeSettings'
 import {
   DEFAULT_REVIEW_STATE,
   normalizeReviewState,
@@ -52,6 +53,7 @@ const TimeAnalysisWorkbench = lazy(() => import('./features/timeAnalysis').then(
 
 const PLANNING_TASKS_STORAGE_KEY = 'meeting-manager:planning-tasks:v1'
 const RESERVE_NOTICE_SCHEME_STATUS_KEY = 'meeting-manager:reserve-notice-scheme-status:v1'
+const RESERVE_NOTICE_SCHEME_SETTINGS_KEY = 'meeting-manager:reserve-notice-scheme-settings:v1'
 
 class PlannerErrorBoundary extends Component {
   constructor(props) {
@@ -142,6 +144,15 @@ function normalizeReserveNoticeSchemeStatus(input) {
   return input && typeof input === 'object' && !Array.isArray(input) ? input : {}
 }
 
+function readReserveNoticeSchemeSettings() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RESERVE_NOTICE_SCHEME_SETTINGS_KEY) || '{}')
+    return normalizeNoticeSettingsStore(parsed)
+  } catch {
+    return {}
+  }
+}
+
 function clearAiPlanningState(state) {
   const normalized = normalizeAiState(state)
   return {
@@ -230,6 +241,7 @@ function App() {
   const [planningTasks, setPlanningTasks] = useState(() => readPlanningTasks())
   const [outlookInviteJobs, setOutlookInviteJobs] = useState([])
   const [reserveNoticeSchemeStatus, setReserveNoticeSchemeStatus] = useState(() => readReserveNoticeSchemeStatus())
+  const [reserveNoticeSchemeSettings, setReserveNoticeSchemeSettings] = useState(() => readReserveNoticeSchemeSettings())
   const [currentPlanningTaskId, setCurrentPlanningTaskId] = useState('')
   const [selectedNoticeTaskId, setSelectedNoticeTaskId] = useState('current')
   const [selectedOutlookTaskId, setSelectedOutlookTaskId] = useState('current')
@@ -301,6 +313,10 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem(RESERVE_NOTICE_SCHEME_STATUS_KEY, JSON.stringify(reserveNoticeSchemeStatus))
   }, [reserveNoticeSchemeStatus])
+
+  useEffect(() => {
+    window.localStorage.setItem(RESERVE_NOTICE_SCHEME_SETTINGS_KEY, JSON.stringify(reserveNoticeSchemeSettings))
+  }, [reserveNoticeSchemeSettings])
 
   useEffect(() => {
     if (!['outlookInvite', 'reserveNotice'].includes(activeTab) || typeof window === 'undefined') return undefined
@@ -776,6 +792,7 @@ function App() {
       reviewState,
       planningTasks,
       reserveNoticeSchemeStatus,
+      reserveNoticeSchemeSettings,
       moduleData: readModuleBackupData(),
     }
   }
@@ -855,6 +872,7 @@ function App() {
         setReviewState(parsed.reviewState ? normalizeReviewState(parsed.reviewState) : DEFAULT_REVIEW_STATE)
         setPlanningTasks(Array.isArray(parsed.planningTasks) ? parsed.planningTasks.map(normalizePlanningTask) : [])
         setReserveNoticeSchemeStatus(normalizeReserveNoticeSchemeStatus(parsed.reserveNoticeSchemeStatus))
+        setReserveNoticeSchemeSettings(normalizeNoticeSettingsStore(parsed.reserveNoticeSchemeSettings))
         restoreModuleBackupData(parsed.moduleData)
         setTimeAnalysisRevision((current) => current + 1)
         appendLog('import', '系统备份', `恢复系统备份，覆盖 ${normalizedMeetings.length} 条会议`)
@@ -1074,6 +1092,7 @@ function App() {
         scheme.source === 'review'
           ? selectedNoticeTask?.reviewState?.reserveNoticeStatus ?? {}
           : reserveNoticeSchemeStatus[scheme.id] ?? {},
+      reserveNoticeSettings: reserveNoticeSchemeSettings[scheme.id] ?? {},
     }))
 
     return (
@@ -1105,6 +1124,23 @@ function App() {
           if (target) {
             appendLog('update', target.name, '更新通知设置')
           }
+        }}
+        onUpdateAdhocNoticeSettings={(rowId, settings, selectedScheme) => {
+          const schemeId = selectedScheme?.id
+          if (!schemeId) return
+
+          setReserveNoticeSchemeSettings((current) => ({
+            ...current,
+            [schemeId]: {
+              ...(current[schemeId] ?? {}),
+              [rowId]: settings,
+            },
+          }))
+          const target = selectedScheme.scheduledMeetings?.find(
+            (meeting) => `adhoc:${meeting.id}` === rowId || `meeting:${meeting.meetingId}` === rowId,
+          )
+          appendLog('update', target?.name ?? '不定期会议', '保存本次排程的独立通知设置')
+          toast('通知设置已保存到本次排程，不会修改会议库')
         }}
         onSaveTemplates={({ templates, disabledBuiltInKeys }) => {
           setNoticeTemplates(templates)
