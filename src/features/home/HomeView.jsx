@@ -1,101 +1,409 @@
-import { useState } from 'react'
-import { AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, ChevronRight, Clock3, Mail, Plus, Search, Users } from 'lucide-react'
-import { isValidEmail } from '../../lib/email'
-import { detectConflicts } from '../../lib/conflicts'
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckSquare2,
+  CheckCircle2,
+  CalendarCheck,
+  CalendarClock,
+  Circle,
+  Database,
+  FileText,
+  Mail,
+  Megaphone,
+  Plus,
+  Radar,
+  Sparkles,
+  Users,
+} from 'lucide-react'
+import { APP_VERSION_LABEL } from '../../lib/appVersion'
 
-function incomplete(meeting) {
-  return !meeting.name?.trim() || !Number(meeting.duration) || (!meeting.attendees?.trim() && !meeting.attendeeRefs?.length)
+const homeLogoSrc = `${import.meta.env.BASE_URL}home-eo-logo-cutout.png`
+
+function isMeetingIncomplete(meeting) {
+  const hasAttendees = String(meeting.attendees || '').trim() || meeting.attendeeRefs?.length > 0
+  return !String(meeting.name || '').trim() || !Number(meeting.duration) || !hasAttendees
 }
 
-function missingEmail(meeting) {
-  const refs = [...(meeting.attendeeRefs || []), ...(meeting.extraInviteeRefs || [])]
-  return refs.some(ref => !isValidEmail(ref.emailSnapshot))
+function hasMissingMeetingEmail(meeting) {
+  const refs = [...(meeting.attendeeRefs ?? []), ...(meeting.extraInviteeRefs ?? [])]
+  return refs.some((ref) => ref.status !== 'linked' || !ref.emailSnapshot)
 }
 
-function shortDate(value, rangeStart) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return value || '尚未排程'
-  return `${rangeStart && value.slice(0, 4) !== rangeStart.slice(0, 4) ? `${value.slice(0, 4)}年` : ''}${Number(value.slice(5, 7))}月${Number(value.slice(8, 10))}日`
+function formatLogTime(value) {
+  const date = value ? new Date(value) : null
+  if (!date || Number.isNaN(date.getTime())) return '刚刚'
+
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
-export function HomeView({ meetings = [], contacts = [], planningTasks = [], logs = [], currentTask,
-  onCreateMeeting, onGoToPlanner, onGoToMeetings, onGoToLogs, onIssueSelect, onNavigateToWorkflow }) {
-  const [filter, setFilter] = useState('all')
-  const [search, setSearch] = useState('')
-  const [searchOpen, setSearchOpen] = useState(false)
-  const current = currentTask || planningTasks.find(task => task.status !== 'scheduled') || planningTasks[0]
-  const schedule = current?.reviewState?.scheduledMeetings || []
-  const conflicts = detectConflicts(schedule.filter(meeting => typeof meeting.startTime === 'string' && typeof meeting.endTime === 'string'))
-  const conflictIds = new Set(conflicts.flatMap(conflict => conflict.meetingIds))
-  const confirmed = current?.status === 'scheduled'
-  const checkStatus = current?.reviewState?.finalCheckStatus || {}
-  const reviewed = schedule.filter(meeting => confirmed || checkStatus[meeting.meetingId || meeting.id]).length
-  const reserved = schedule.filter(meeting => meeting.reserved).length
-  const issues = [
-    { id: 'conflicts', label: '检查时间冲突', count: conflicts.length, icon: CalendarDays },
-    { id: 'email', label: '补齐参会人邮箱', count: meetings.filter(missingEmail).length, icon: Mail },
-    { id: 'incomplete', label: '补齐会议资料', count: meetings.filter(incomplete).length, icon: AlertTriangle },
-    { id: 'contacts', label: '维护通讯录邮箱', count: contacts.filter(person => person.status !== 'archived' && !isValidEmail(person.email)).length, icon: Users },
-  ].filter(issue => issue.count > 0)
-  const nextStep = !current || !schedule.length ? 'prepare' : !confirmed ? 'review' : reserved < schedule.length ? 'reserveNotice' : 'outlookInvite'
-  const nextLabels = { prepare: current ? '继续准备清单' : '创建排程任务', review: '继续审核', reserveNotice: '继续预留通知', outlookInvite: '生成会邀草稿' }
-  const nextHeadings = { prepare: '准备本期会议清单', review: '完成排程审核', reserveNotice: '发送预留通知', outlookInvite: '生成会邀草稿' }
-  const otherTasks = planningTasks.filter(task => task.id !== current?.id).slice(0, 3)
-  const continueWork = () => current ? onNavigateToWorkflow?.(current.id, nextStep) : onGoToPlanner?.()
-  const sourceRows = schedule.length ? schedule : meetings
-  const rows = sourceRows.map(meeting => {
-    const checked = confirmed || Boolean(checkStatus[meeting.meetingId || meeting.id])
-    const badEmail = missingEmail(meetings.find(item => item.id === meeting.meetingId) || meeting)
-    const status = conflictIds.has(meeting.id) ? ['warn', '时间冲突'] : !schedule.length ? ['neutral', '待排程'] : checked ? ['ok', '已核对'] : ['pending', '待审核']
-    return { ...meeting, checked, emailWarning: badEmail, displayStatus: status }
-  }).filter(meeting => (filter === 'all' || (filter === 'checked' ? meeting.checked : !meeting.checked)) && `${meeting.name} ${meeting.attendees || ''}`.toLowerCase().includes(search.toLowerCase()))
+function HomeMetric({ icon, label, value, hint, tone = 'default' }) {
+  const MetricIcon = icon
 
   return (
-    <section className="eo-home" aria-label="会议运营工作台">
-      <header className="eo-home-heading">
-        <div className="eo-breadcrumb">工作台 / 当前任务</div>
-        <div className="eo-home-title-line">
-          <div>
-            <div className="eo-heading-title-row"><h1>{current?.name || '开始本月会议安排'}</h1>{current && <span className="eo-state-pill"><span />{confirmed ? '已确认' : schedule.length ? '待审核' : '准备中'}</span>}</div>
-            <p>{current?.timeRange ? `${current.timeRange.start.replaceAll('-', '.')} — ${current.timeRange.end.replaceAll('-', '.')}` : '从会议资料开始，逐步完成排程、通知与会邀。'}</p>
-          </div>
-          <div className="eo-home-primary-actions"><button className="nx-btn nx-btn-primary" onClick={continueWork}>{nextLabels[nextStep]}<ArrowRight size={17} /></button><button className="eo-text-action" onClick={onGoToPlanner}>查看全部任务</button></div>
-        </div>
-        {current && <div className="eo-home-progress">
-          <p><strong>{schedule.length || current.generatedCount || 0}</strong> 场会议<span>·</span>已核对 <strong>{reviewed}</strong> 场<span>·</span>待审核 <strong>{Math.max(0, schedule.length - reviewed)}</strong> 场</p>
-          <div className="eo-progress-track" role="progressbar" aria-label="会议核对进度" aria-valuemin={0} aria-valuemax={schedule.length || 1} aria-valuenow={reviewed}><span style={{ width: `${schedule.length ? reviewed / schedule.length * 100 : 0}%` }} /></div>
-        </div>}
-      </header>
+    <div className={`nx-card nx-card-hover hv-metric hv-metric-${tone}`}>
+      <MetricIcon aria-hidden="true" />
+      <div className="hv-metric-copy">
+        <span>{label}</span>
+        <strong>{value}</strong>
+        <em>{hint}</em>
+      </div>
+    </div>
+  )
+}
 
-      <div className="eo-home-grid">
-        <section className="eo-home-meetings">
-          <div className="eo-home-section-head"><h2>{schedule.length ? '本期会议' : '会议资料'}</h2>
-            <div className="eo-home-filters" aria-label="会议核对范围">{[['all', '全部'], ['pending', '待审核'], ['checked', '已核对']].map(([key, label]) => <button className={filter === key ? 'is-active' : ''} key={key} onClick={() => setFilter(key)} aria-pressed={filter === key}>{label}</button>)}</div>
-            <button className="eo-icon-action" onClick={() => setSearchOpen(value => !value)} aria-label="筛选本期会议"><Search size={19} /></button>
+function HomeListItem({ label, value, tone = 'default', actionLabel, onClick }) {
+  return (
+    <div className="nx-row">
+      <span className={`nx-dot nx-dot-${tone}`} aria-hidden="true" />
+      <div className="nx-row-main">
+        <strong>{label}</strong>
+        <span>{value}</span>
+      </div>
+      {onClick ? (
+        <button className="nx-btn nx-btn-quiet" onClick={onClick} type="button">
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+function WorkflowStep({ label, hint, state, onClick }) {
+  const stateLabel = state === 'done' ? '已完成' : state === 'current' ? '进行中' : '待开始'
+
+  return (
+    <button
+      className={`hv-flow-step hv-flow-step-${state}`}
+      type="button"
+      onClick={onClick}
+      disabled={!onClick || state === 'locked'}
+      aria-label={`${label}，${stateLabel}`}
+    >
+      <span className="hv-flow-step-icon" aria-hidden="true">
+        {state === 'done' ? <CheckCircle2 /> : <Circle />}
+      </span>
+      <span className="hv-flow-step-copy">
+        <strong>{label}</strong>
+        <em>{hint}</em>
+      </span>
+    </button>
+  )
+}
+
+export function HomeView({
+  meetings = [],
+  contacts = [],
+  planningTasks = [],
+  scheduledTaskOptions = [],
+  reviewConflicts = [],
+  logs = [],
+  onCreateMeeting,
+  onGoToMeetings,
+  onGoToPlanner,
+  onGoToReserveNotice,
+  onGoToOutlookInvite,
+  onGoToContacts,
+  onGoToLogs,
+}) {
+  const incompleteMeetings = meetings.filter(isMeetingIncomplete)
+  const missingEmailMeetings = meetings.filter(hasMissingMeetingEmail)
+  const contactsMissingEmail = contacts.filter((contact) => contact.status !== 'archived' && !contact.email)
+  const scheduledTasks = planningTasks.filter((task) => task.reviewState?.scheduledMeetings?.length > 0 || task.status === 'scheduled')
+  const pendingPlanningTasks = planningTasks.filter((task) => !task.reviewState?.scheduledMeetings?.length && task.status !== 'scheduled')
+  const scheduledMeetingCount = scheduledTasks.reduce(
+    (total, task) => total + Number(task.reviewState?.scheduledMeetings?.length ?? task.scheduledCount ?? 0),
+    0,
+  )
+  const reservedMeetingCount = scheduledTasks.reduce(
+    (total, task) => total + (task.reviewState?.scheduledMeetings ?? []).filter((meeting) => meeting.reserved).length,
+    0,
+  )
+  const recentLogs = logs.slice(0, 4)
+  const riskCount = reviewConflicts.length + incompleteMeetings.length + missingEmailMeetings.length + contactsMissingEmail.length
+  const todayLabel = new Date().toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  })
+
+  const todoItems = [
+    meetings.length === 0
+      ? {
+          label: '建立会议库',
+          value: '当前还没有会议资料',
+          actionLabel: '新建',
+          onClick: onCreateMeeting,
+          tone: 'info',
+        }
+      : null,
+    incompleteMeetings.length > 0
+      ? {
+          label: '补齐会议资料',
+          value: `${incompleteMeetings.length} 个会议缺少名称、时长或参会人`,
+          actionLabel: '处理',
+          onClick: onGoToMeetings,
+          tone: 'warn',
+        }
+      : null,
+    planningTasks.length === 0
+      ? {
+          label: '创建排程任务',
+          value: '还没有排程任务',
+          actionLabel: '排程',
+          onClick: onGoToPlanner,
+          tone: 'info',
+        }
+      : null,
+    pendingPlanningTasks.length > 0
+      ? {
+          label: '推进排程',
+          value: `${pendingPlanningTasks.length} 个任务还未形成可用排程`,
+          actionLabel: '查看',
+          onClick: onGoToPlanner,
+          tone: 'default',
+        }
+      : null,
+    scheduledTaskOptions.length > 0
+      ? {
+          label: '发送预留通知',
+          value: `${scheduledTaskOptions.length} 个已排程任务可进入通知环节`,
+          actionLabel: '通知',
+          onClick: onGoToReserveNotice,
+          tone: 'ok',
+        }
+      : null,
+  ].filter(Boolean)
+
+  const riskItems = [
+    reviewConflicts.length > 0
+      ? {
+          label: '排程冲突',
+          value: `${reviewConflicts.length} 个冲突需要处理`,
+          actionLabel: '审核',
+          onClick: onGoToPlanner,
+          tone: 'danger',
+        }
+      : null,
+    missingEmailMeetings.length > 0
+      ? {
+          label: '参会人邮箱缺失',
+          value: `${missingEmailMeetings.length} 个会议存在未关联或缺邮箱人员`,
+          actionLabel: '会议库',
+          onClick: onGoToMeetings,
+          tone: 'warn',
+        }
+      : null,
+    contactsMissingEmail.length > 0
+      ? {
+          label: '通讯录邮箱缺失',
+          value: `${contactsMissingEmail.length} 位联系人未填写邮箱`,
+          actionLabel: '通讯录',
+          onClick: onGoToContacts,
+          tone: 'warn',
+        }
+      : null,
+    incompleteMeetings.length > 0
+      ? {
+          label: '会议资料不完整',
+          value: `${incompleteMeetings.length} 个会议待补齐基础字段`,
+          actionLabel: '补齐',
+          onClick: onGoToMeetings,
+          tone: 'info',
+        }
+      : null,
+  ].filter(Boolean)
+
+  const workflowSteps = [
+    {
+      label: '建立会议库',
+      hint: meetings.length > 0 ? `${meetings.length} 条会议资料` : '录入会议与参会人',
+      state: meetings.length > 0 ? 'done' : 'current',
+      onClick: onGoToMeetings,
+    },
+    {
+      label: '创建排程任务',
+      hint: planningTasks.length > 0 ? `${planningTasks.length} 个任务` : '确定排程时间范围',
+      state: planningTasks.length > 0 ? 'done' : meetings.length > 0 ? 'current' : 'locked',
+      onClick: meetings.length > 0 ? onGoToPlanner : null,
+    },
+    {
+      label: '审核采用方案',
+      hint: scheduledTasks.length > 0 ? `${scheduledTasks.length} 个已采用` : '生成并确认候选方案',
+      state: scheduledTasks.length > 0 ? 'done' : planningTasks.length > 0 ? 'current' : 'locked',
+      onClick: planningTasks.length > 0 ? onGoToPlanner : null,
+    },
+    {
+      label: '发送预留通知',
+      hint: reservedMeetingCount > 0 ? `${reservedMeetingCount} 场已预留` : '通知相关人员预留时间',
+      state: reservedMeetingCount > 0 ? 'done' : scheduledTasks.length > 0 ? 'current' : 'locked',
+      onClick: scheduledTasks.length > 0 ? onGoToReserveNotice : null,
+    },
+    {
+      label: '生成正式会邀',
+      hint: scheduledMeetingCount > 0 ? `${scheduledMeetingCount} 场可检查` : '生成 Outlook 草稿',
+      state: reservedMeetingCount > 0 ? 'current' : 'locked',
+      onClick: scheduledTasks.length > 0 ? onGoToOutlookInvite : null,
+    },
+  ]
+  const currentWorkflowStep = workflowSteps.find((step) => step.state === 'current') ?? workflowSteps.at(-1)
+
+  return (
+    <section className="hv-workspace" aria-label="会议运营首页">
+      <section className="hv-hero" aria-label="首页总览">
+        <div className="hv-hero-main">
+          <span className="hv-hero-eyebrow">总裁办 · {todayLabel}</span>
+          <h2>总裁办会议管理系统</h2>
+          <p className="hv-hero-desc">
+            统一汇总会议资产、排程进度、通知预留与会邀生成，按日推进、风险可见、记录可追踪。
+          </p>
+          <div className="hv-hero-actions">
+            <button className="nx-btn nx-btn-primary" onClick={onCreateMeeting} type="button">
+              <Plus />
+              新建会议
+            </button>
+            <button className="nx-btn nx-btn-outline" onClick={onGoToPlanner} type="button">
+              <Sparkles />
+              生成排程
+            </button>
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToReserveNotice} type="button">
+              <Megaphone />
+              预留通知
+            </button>
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToOutlookInvite} type="button">
+              <Mail />
+              会邀生成
+            </button>
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToContacts} type="button">
+              <Users />
+              通讯录
+            </button>
           </div>
-          {searchOpen && <input className="nx-input eo-home-search" autoFocus placeholder="搜索会议、参会人" aria-label="筛选本期会议" value={search} onChange={event => setSearch(event.target.value)} />}
-          {sourceRows.length ? <>
-            <table className="eo-home-table"><thead><tr><th>会议</th><th>排程时间</th><th>参会人</th><th>状态</th><th><span className="sr-only">操作</span></th></tr></thead>
-              <tbody>{rows.slice(0, 6).map(meeting => <tr key={meeting.id}>
-                <td><button onClick={() => schedule.length ? onNavigateToWorkflow?.(current.id, 'review') : onGoToMeetings?.()}>{meeting.name}</button></td>
-                <td><CalendarDays size={14} /><span>{shortDate(meeting.date || meeting.nextDate, current?.timeRange?.start)}{meeting.startTime ? ` ${meeting.startTime}–${meeting.endTime}` : ''}</span></td>
-                <td><Users size={14} /><span title={meeting.attendees}>{meeting.attendees || '待补充'}</span></td>
-                <td><span className={`eo-row-status eo-row-status-${meeting.displayStatus[0]}`}><i />{meeting.displayStatus[1]}</span>{meeting.emailWarning && <span className="eo-row-email-warning" title="参会人邮箱待补充" aria-label="参会人邮箱待补充"><Mail size={12} /></span>}</td>
-                <td><button className="eo-icon-action" aria-label={`打开 ${meeting.name}`} onClick={() => schedule.length ? onNavigateToWorkflow?.(current.id, 'review') : onGoToMeetings?.()}><ChevronRight size={16} /></button></td>
-              </tr>)}</tbody>
-            </table>
-            <div className="eo-home-table-footer"><span>显示 {Math.min(rows.length, 6)} / {sourceRows.length} 场</span>{rows.length > 6 && <button className="eo-text-action" onClick={() => schedule.length ? onNavigateToWorkflow?.(current.id, 'review') : onGoToMeetings?.()}>查看全部会议<ArrowRight size={14} /></button>}</div>
-            {rows.length === 0 && <div className="eo-home-empty-inline">没有符合当前筛选的会议。</div>}
-          </> : <div className="eo-home-first-use"><CalendarDays size={30} strokeWidth={1.4} /><h3>先把会议资料整理好</h3><p>录入会议、频率和参会人，下一次排程就能直接复用。</p><button className="nx-btn nx-btn-outline" onClick={onCreateMeeting}><Plus size={15} />录入第一场会议</button></div>}
+        </div>
+
+        <div className="hv-hero-logo" aria-hidden="true">
+          <img src={homeLogoSrc} alt="" />
+        </div>
+
+        <aside className="hv-status" aria-label="运营总览">
+          <div className="hv-status-head">
+            <strong>运营总览</strong>
+            <em>{APP_VERSION_LABEL}</em>
+          </div>
+          <div className="hv-status-grid">
+            <div className="hv-status-cell hv-status-cell-accent">
+              <span>会议条目</span>
+              <strong>{meetings.length}</strong>
+            </div>
+            <div className="hv-status-cell hv-status-cell-warn">
+              <span>待处理事项</span>
+              <strong>{todoItems.length}</strong>
+            </div>
+            <div className={riskCount > 0 ? 'hv-status-cell hv-status-cell-danger' : 'hv-status-cell'}>
+              <span>风险提醒</span>
+              <strong>{riskCount}</strong>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section className="hv-metrics" aria-label="运营指标">
+        <HomeMetric icon={Database} label="会议库" value={meetings.length} hint="有效会议" tone="accent" />
+        <HomeMetric icon={CalendarClock} label="排程任务" value={planningTasks.length} hint={`${pendingPlanningTasks.length} 个待推进`} />
+        <HomeMetric icon={CalendarCheck} label="已排程" value={scheduledMeetingCount} hint={`${scheduledTasks.length} 个任务`} />
+        <HomeMetric
+          icon={AlertTriangle}
+          label="风险提醒"
+          value={riskCount}
+          hint={`${reviewConflicts.length} 个冲突`}
+          tone={riskCount > 0 ? 'danger' : 'default'}
+        />
+      </section>
+
+      <section className="nx-card hv-flow" aria-label="会议运营流程">
+        <div className="hv-flow-head">
+          <div>
+            <span>会议运营流程</span>
+            <strong>{currentWorkflowStep?.label ?? '流程已完成'}</strong>
+          </div>
+          {currentWorkflowStep?.onClick ? (
+            <button className="nx-btn nx-btn-outline" type="button" onClick={currentWorkflowStep.onClick}>
+              继续处理
+              <ArrowRight aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+        <div className="hv-flow-steps">
+          {workflowSteps.map((step) => <WorkflowStep key={step.label} {...step} />)}
+        </div>
+      </section>
+
+      <div className="hv-grid">
+        <section className="nx-card hv-panel">
+          <div className="nx-section-head">
+            <span className="nx-section-title">
+              <CheckSquare2 aria-hidden="true" />
+              待办事项
+            </span>
+            <span className="nx-section-count">{todoItems.length > 0 ? `${todoItems.length} 项` : '清爽'}</span>
+          </div>
+          <div className="nx-rows">
+            {todoItems.length > 0 ? (
+              todoItems.map((item) => <HomeListItem key={item.label} {...item} />)
+            ) : (
+              <div className="nx-empty">暂无待办事项。</div>
+            )}
+          </div>
         </section>
 
-        <aside className="eo-home-side">
-          <section className="eo-next-panel"><span>下一步</span><h2>{nextHeadings[nextStep]}</h2><p>{issues.length ? '先处理待核实事项，再继续当前任务。' : current ? '资料已就绪，继续推进当前任务。' : '建好会议资料后，创建本期排程任务。'}</p>
-            {issues.map(issue => <button className="eo-next-issue" key={issue.id} onClick={() => onIssueSelect?.(issue.id, current?.id)}><issue.icon size={18} /><span>{issue.label}</span><em>{issue.count}</em><ChevronRight size={15} /></button>)}
-            {issues.length === 0 && <div className="eo-ready-note"><CheckCircle2 size={17} /><span>没有待处理的资料问题</span></div>}
-          </section>
-          {logs.length > 0 && <section className="eo-home-activity"><div className="eo-home-section-head"><h3>最近操作</h3><button className="eo-text-action" onClick={onGoToLogs}>全部</button></div>{logs.slice(0, 3).map(log => <div className="eo-activity-row" key={log.id}><span className="eo-activity-dot" /><div><p>{log.detail || log.targetName || log.actionType}</p><time>{new Date(log.timestamp || log.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></div></div>)}</section>}
-          {otherTasks.length > 0 && <section className="eo-home-other"><h3>其他任务</h3>{otherTasks.map(task => <button key={task.id} onClick={() => onNavigateToWorkflow?.(task.id, task.reviewState?.scheduledMeetings?.length ? 'review' : 'prepare')}><Clock3 size={15} /><span>{task.name}</span><ChevronRight size={14} /></button>)}</section>}
-        </aside>
+        <section className="nx-card hv-panel">
+          <div className="nx-section-head">
+            <span className="nx-section-title">
+              <Radar aria-hidden="true" style={{ color: riskItems.length > 0 ? '#b91c1c' : undefined }} />
+              风险提醒
+            </span>
+            <span className="nx-section-count">{riskItems.length > 0 ? `${riskItems.length} 项` : '正常'}</span>
+          </div>
+          <div className="nx-rows">
+            {riskItems.length > 0 ? (
+              riskItems.map((item) => <HomeListItem key={item.label} {...item} />)
+            ) : (
+              <div className="nx-empty">当前没有明显风险。</div>
+            )}
+          </div>
+        </section>
+
+        <section className="nx-card hv-panel">
+          <div className="nx-section-head">
+            <span className="nx-section-title">
+              <FileText aria-hidden="true" style={{ color: '#475569' }} />
+              最近操作
+            </span>
+            <button className="nx-btn nx-btn-quiet" onClick={onGoToLogs} type="button">
+              全部记录
+            </button>
+          </div>
+          <div className="nx-rows">
+            {recentLogs.length > 0 ? (
+              recentLogs.map((log) => (
+                <div className="nx-row" key={log.id}>
+                  <span className="nx-dot" aria-hidden="true" />
+                  <div className="nx-row-main">
+                    <strong>{log.targetName || log.target || '系统操作'}</strong>
+                    <span>{log.detail || log.actionType || '已记录'}</span>
+                  </div>
+                  <span className="hv-log-time">{formatLogTime(log.timestamp ?? log.createdAt)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="nx-empty">暂无操作记录。</div>
+            )}
+          </div>
+        </section>
       </div>
     </section>
   )

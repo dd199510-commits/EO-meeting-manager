@@ -6,7 +6,6 @@ import {
 } from '../../data/meetingData'
 import { calculateNextOccurrence } from '../../lib/meetingFrequency'
 import { addDays, addMonths, formatDate } from '../../lib/date'
-import { isValidEmail } from '../../lib/email'
 
 export const FREQUENCY_ORDER = {
   weekly: 1,
@@ -47,11 +46,6 @@ export function filterMeetings(meetings, filters) {
 }
 
 function passesAdditionalFilters(meeting, filters, today) {
-  if (filters.issue === 'email') {
-    const refs = [...(meeting.attendeeRefs || []), ...(meeting.extraInviteeRefs || [])]
-    if (!refs.some(ref => !isValidEmail(ref.emailSnapshot))) return false
-  }
-  if (filters.issue === 'incomplete' && meeting.name?.trim() && Number(meeting.duration) > 0 && (meeting.attendees?.trim() || meeting.attendeeRefs?.length)) return false
   if (filters.attendee?.trim()) {
     const attendeeKeyword = filters.attendee.toLowerCase()
     if (!meeting.attendees.toLowerCase().includes(attendeeKeyword)) {
@@ -142,8 +136,7 @@ export function hasActiveFilters(filters) {
     (filters.frequencyTypes?.length ?? 0) > 0 ||
     Boolean(filters.attendee?.trim()) ||
     filters.timeRange !== 'all' ||
-    filters.historyStatus !== 'all' ||
-    (filters.issue && filters.issue !== 'all')
+    filters.historyStatus !== 'all'
   )
 }
 
@@ -265,7 +258,6 @@ export function getGroupSummary(meetings) {
 
 export function getActiveFilterTags(filters) {
   const tags = []
-  if (filters.issue && filters.issue !== 'all') tags.push({ key: 'issue', label: filters.issue === 'email' ? '参会人邮箱待补齐' : '基础资料待补齐' })
 
   if (filters.search.trim()) {
     tags.push({ key: 'search', label: `搜索: ${filters.search}` })

@@ -1,7 +1,7 @@
 {
   "name": "meeting-manager",
   "private": true,
-  "version": "4.7.0",
+  "version": "4.5.0",
   "description": "会议管理系统 — 会议资产维护、AI 排程、审核调整、预留通知与会邀生成一体化桌面应用",
   "license": "MIT",
   "main": "electron/main.cjs",
@@ -15,8 +15,6 @@
     "verify:planning-task-compat": "node scripts/verify-planning-task-compat.mjs",
     "verify:reserve-notice-settings": "node scripts/verify-reserve-notice-settings.mjs",
     "verify:time-analysis": "node scripts/verify-time-analysis.mjs",
-    "verify:data-import": "node scripts/verify-data-import.mjs",
-    "verify:operations": "node scripts/verify-operations.mjs",
     "desktop:dev": "node electron/dev-runner.cjs",
     "desktop:build": "npm run build && electron-builder --mac dir",
     "desktop:dist": "npm run build && electron-builder --mac dmg",
@@ -44,8 +42,8 @@
     "vite": "^7.3.1"
   },
   "build": {
-    "appId": "com.ddss.meetingmanager.optimized",
-    "productName": "EO会议管理系统优化版",
+    "appId": "com.ddss.meetingmanager",
+    "productName": "CEO Office 会议管理系统",
     "directories": {
       "output": "release"
     },
@@ -67,7 +65,6 @@
       "category": "public.app-category.productivity"
     },
     "win": {
-      "signAndEditExecutable": false,
       "target": [
         {
           "target": "nsis",

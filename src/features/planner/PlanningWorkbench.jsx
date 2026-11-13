@@ -4,12 +4,10 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
-  ChevronLeft,
   Copy,
   Eye,
   List,
   RefreshCw,
-  Search,
   Trash2,
   X,
 } from 'lucide-react'
@@ -272,36 +270,6 @@ function hydrateImportedSchedule(parsed, exportBatch, rawExport) {
 }
 
 const EMPTY_RANGE = { start: '', end: '' }
-const PLANNER_WORKSPACE_KEY = 'meeting-manager:ui:planner-workspace:v1:'
-
-function readPlanningWorkspace(taskId) {
-  if (!taskId || typeof window === 'undefined') return {}
-  try {
-    const stored = JSON.parse(window.localStorage.getItem(`${PLANNER_WORKSPACE_KEY}${taskId}`) || '{}')
-    return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}
-  } catch {
-    return {}
-  }
-}
-
-function savePlanningWorkspace(taskId, patch) {
-  if (!taskId || typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(`${PLANNER_WORKSPACE_KEY}${taskId}`, JSON.stringify({
-      ...readPlanningWorkspace(taskId), ...patch,
-    }))
-  } catch { /* UI position is optional when local storage is unavailable. */ }
-}
-
-function getTaskResumeStep(task, savedStep) {
-  const hasReview = task?.reviewState?.scheduledMeetings?.length > 0
-  const hasInput = task?.aiState?.inputMeetings?.meetings?.length > 0
-  if (savedStep === 'review' && hasReview) return 'review'
-  if (savedStep === 'ai' && hasInput) return 'ai'
-  if (savedStep === 'prepare') return 'prepare'
-  if (task?.status === 'scheduled' || task?.status === 'reviewing' || hasReview) return 'review'
-  return task?.status === 'draft' || task?.status === 'list_ready' || !task ? 'prepare' : 'ai'
-}
 
 export function PlanningWorkbench({
   meetings,
@@ -316,13 +284,7 @@ export function PlanningWorkbench({
   onDeletePlanningTask,
   onApplyAiSchedule,
   renderReviewBoard,
-  requestedStep = '',
-  onRequestedStepApplied,
-  onWorkflowStepChange,
 }) {
-  const [initialTask] = useState(() => planningTasks.find((task) => task.id === currentPlanningTaskId) ?? null)
-  const [initialWorkspace] = useState(() => readPlanningWorkspace(currentPlanningTaskId))
-  const [initialInput] = useState(() => normalizePlanningInputMeetings(initialTask?.aiState?.inputMeetings))
   const [showConnectionModal, setShowConnectionModal] = useState(false)
   const [showConstraints, setShowConstraints] = useState(false)
   const [selectedSchemeId, setSelectedSchemeId] = useState('')
@@ -331,14 +293,10 @@ export function PlanningWorkbench({
   const [showResultJsonModal, setShowResultJsonModal] = useState(false)
   const [showNewTaskModal, setShowNewTaskModal] = useState(false)
   const [newTaskName, setNewTaskName] = useState('')
-  const [plannerView, setPlannerView] = useState(() => currentPlanningTaskId ? 'workspace' : 'home')
-  const [activeWorkflowStep, setActiveWorkflowStep] = useState(() => getTaskResumeStep(initialTask, initialWorkspace.step))
+  const [plannerView, setPlannerView] = useState('home')
+  const [activeWorkflowStep, setActiveWorkflowStep] = useState('prepare')
   const [taskHomeFilter, setTaskHomeFilter] = useState('all')
-  const [range, setRange] = useState(() => initialInput?.timeRange ?? normalizePlanningRange(initialWorkspace.range) ?? normalizePlanningRange(initialTask?.timeRange) ?? { ...EMPTY_RANGE })
-  const [previewSearch, setPreviewSearch] = useState(initialWorkspace.search || '')
-  const [previewFrequency, setPreviewFrequency] = useState(initialWorkspace.frequency || 'all')
-  const [previewAttention, setPreviewAttention] = useState(initialWorkspace.attention || 'all')
-  const [previewFiltersOpen, setPreviewFiltersOpen] = useState(() => (initialWorkspace.frequency && initialWorkspace.frequency !== 'all') || (initialWorkspace.attention && initialWorkspace.attention !== 'all') || false)
+  const [range, setRange] = useState(() => ({ ...EMPTY_RANGE }))
   const [showInstancesModal, setShowInstancesModal] = useState(false)
   const [instancesView, setInstancesView] = useState('calendar')
   const [, setScheduleError] = useState('')
@@ -346,8 +304,8 @@ export function PlanningWorkbench({
   const [slotInput, setSlotInput] = useState({ start: '', end: '', reason: '' })
   const [expandedRuleIds, setExpandedRuleIds] = useState([])
   const [editingRule, setEditingRule] = useState(null)
-  const [generatedInstances, setGeneratedInstances] = useState(() => initialInput?.meetings ?? [])
-  const [generatedSourceSignature, setGeneratedSourceSignature] = useState(() => initialInput?.metadata?.sourceSignature ?? '')
+  const [generatedInstances, setGeneratedInstances] = useState([])
+  const [generatedSourceSignature, setGeneratedSourceSignature] = useState('')
   const [aiJobs, setAiJobs] = useState([])
   const [submitError, setSubmitError] = useState('')
   const [submitBusy, setSubmitBusy] = useState(false)
@@ -365,40 +323,6 @@ export function PlanningWorkbench({
   const [configError, setConfigError] = useState('')
   const [, setImportMessage] = useState('')
   const importSectionRef = useRef(null)
-  const workspaceRef = useRef(null)
-
-  useEffect(() => {
-    onWorkflowStepChange?.(activeWorkflowStep)
-  }, [activeWorkflowStep, onWorkflowStepChange])
-
-  useEffect(() => {
-    savePlanningWorkspace(currentPlanningTaskId, {
-      step: activeWorkflowStep, range, search: previewSearch,
-      frequency: previewFrequency, attention: previewAttention,
-    })
-  }, [activeWorkflowStep, currentPlanningTaskId, previewAttention, previewFrequency, previewSearch, range])
-
-  useEffect(() => {
-    if (plannerView !== 'workspace' || !currentPlanningTaskId) return undefined
-    const container = workspaceRef.current?.closest('.app-page-content')
-    if (!container) return undefined
-    const saved = readPlanningWorkspace(currentPlanningTaskId)
-    const frame = window.requestAnimationFrame(() => {
-      container.scrollTop = saved.scrollByStep?.[activeWorkflowStep] ?? 0
-    })
-    function rememberPosition() {
-      const current = readPlanningWorkspace(currentPlanningTaskId)
-      savePlanningWorkspace(currentPlanningTaskId, {
-        scrollByStep: { ...current.scrollByStep, [activeWorkflowStep]: container.scrollTop },
-      })
-    }
-    container.addEventListener('scroll', rememberPosition, { passive: true })
-    return () => {
-      window.cancelAnimationFrame(frame)
-      rememberPosition()
-      container.removeEventListener('scroll', rememberPosition)
-    }
-  }, [activeWorkflowStep, currentPlanningTaskId, plannerView])
 
   const currentSourceSignature = useMemo(() => buildPlanningSourceSignature(meetings), [meetings])
   const hasCompleteRange = hasCompleteDateRange(range)
@@ -490,22 +414,6 @@ export function PlanningWorkbench({
   const hasGeneratedPlan = generatedInstances.length > 0
   const canSubmitToAi = hasGeneratedPlan && !isGeneratedPlanStale
   const hasImportedSchedule = Boolean(aiState.scheduledMeetings?.scheduledMeetings?.length)
-  const applyRequestedStep = useEffectEvent(() => {
-    if (requestedStep === 'home') { setPlannerView('home'); onRequestedStepApplied?.(); return }
-    if (!currentPlanningTaskId) { onRequestedStepApplied?.(); return }
-    const task = planningTasks.find((item) => item.id === currentPlanningTaskId)
-    const canReview = hasImportedSchedule || task?.reviewState?.scheduledMeetings?.length > 0
-    const nextStep = requestedStep === 'review' && canReview ? 'review'
-      : requestedStep === 'ai' && hasGeneratedPlan ? 'ai' : 'prepare'
-    setPlannerView('workspace')
-    setActiveWorkflowStep(nextStep)
-    onRequestedStepApplied?.()
-  })
-  useEffect(() => {
-    if (!requestedStep) return undefined
-    const frame = window.requestAnimationFrame(() => applyRequestedStep())
-    return () => window.cancelAnimationFrame(frame)
-  }, [requestedStep])
   const latestJobPhaseHint =
     formatJobProgress(latestBatchJob) ||
     (JOB_PHASE_HINTS[latestBatchJob?.status] ??
@@ -800,18 +708,9 @@ export function PlanningWorkbench({
   const planningPreviewRows = useMemo(
     () =>
       planningPreviewInstances
-        .filter((item) => {
-          const search = previewSearch.trim().toLowerCase()
-          const haystack = [item.name, item.attendees, item.owner, item.notes].filter(Boolean).join(' ').toLowerCase()
-          if (search && !haystack.includes(search)) return false
-          if (previewFrequency !== 'all' && item.frequency !== previewFrequency) return false
-          if (previewAttention === 'missing' && item.attendees?.trim() && Number(item.duration) > 0) return false
-          if (previewAttention === 'constraints' && !item.notes?.trim() && !item.noteMentions?.length) return false
-          return true
-        })
         .slice()
         .sort((left, right) => left.date.localeCompare(right.date) || left.name.localeCompare(right.name, 'zh-CN')),
-    [planningPreviewInstances, previewAttention, previewFrequency, previewSearch],
+    [planningPreviewInstances],
   )
   const hasSelectedScheme = Boolean(selectedSchemeId && (selectedSchemeJob || selectedSchemeData || aiResultSummary))
   const handleCompletedJob = useEffectEvent((job, options = {}) => {
@@ -1202,8 +1101,7 @@ export function PlanningWorkbench({
   }
 
   function getPlanningTaskStatusLabel(status) {
-    if (status === 'scheduled') return '已确认'
-    if (status === 'reviewing') return '待审核'
+    if (status === 'scheduled') return '已排程'
     if (status === 'ai_done') return 'AI 完成'
     if (status === 'ai_running') return 'AI 中'
     if (status === 'list_ready') return '清单'
@@ -1212,15 +1110,13 @@ export function PlanningWorkbench({
 
   function getPlanningTaskStatusGroup(status) {
     if (status === 'scheduled') return 'scheduled'
-    if (status === 'reviewing') return 'active'
     if (status === 'draft') return 'draft'
     return 'active'
   }
 
   function getTaskStageMeta(status) {
-    if (status === 'scheduled') return { done: 3, current: 0, label: '已确认排程' }
-    if (status === 'reviewing') return { done: 2, current: 3, label: '下一步：审核并确认' }
-    if (status === 'ai_done') return { done: 2, current: 3, label: '下一步：选用方案并审核' }
+    if (status === 'scheduled') return { done: 3, current: 0, label: '已完成排程' }
+    if (status === 'ai_done') return { done: 2, current: 3, label: '下一步：调整与采用' }
     if (status === 'ai_running') return { done: 1, current: 2, label: '生成方案中（AI 运行）' }
     if (status === 'list_ready') return { done: 1, current: 2, label: '下一步：生成方案' }
     return { done: 0, current: 1, label: '下一步：准备清单' }
@@ -1302,11 +1198,7 @@ export function PlanningWorkbench({
         scheduledMeetings: null,
       }))
     }
-    const savedWorkspace = readPlanningWorkspace(task.id)
-    setActiveWorkflowStep(getTaskResumeStep(task, savedWorkspace.step))
-    setPreviewSearch(savedWorkspace.search || '')
-    setPreviewFrequency(savedWorkspace.frequency || 'all')
-    setPreviewAttention(savedWorkspace.attention || 'all')
+    setActiveWorkflowStep(task.status === 'scheduled' ? 'review' : task.status === 'draft' || task.status === 'list_ready' ? 'prepare' : 'ai')
     setPlannerView('workspace')
   }
 
@@ -1367,7 +1259,7 @@ export function PlanningWorkbench({
       }
       onCreatePlanningTask?.({
         aiState: nextAiState,
-        status: options.importToReview ? 'reviewing' : 'ai_done',
+        status: options.importToReview ? 'scheduled' : 'ai_done',
         timeRange: sourceInputMeetings.timeRange,
         generatedCount: sourceInputMeetings.meetings?.length ?? 0,
         scheduledCount: parsed.scheduledMeetings.length,
@@ -1380,7 +1272,7 @@ export function PlanningWorkbench({
       )
       toast(
         options.importToReview
-          ? `已选用方案（${parsed.scheduledMeetings.length} 条），请在审核后确认最终排程`
+          ? `已采用方案（${parsed.scheduledMeetings.length} 条），进入排程调整`
           : `已导入 ${parsed.scheduledMeetings.length} 条排程结果`,
       )
       if (options.importToReview) {
@@ -1526,7 +1418,7 @@ export function PlanningWorkbench({
     ['all', '全部', planningTasks.length],
     ['draft', '草稿', planningTasks.filter((task) => getPlanningTaskStatusGroup(task.status) === 'draft').length],
     ['active', '进行中', planningTasks.filter((task) => getPlanningTaskStatusGroup(task.status) === 'active').length],
-    ['scheduled', '已确认', planningTasks.filter((task) => getPlanningTaskStatusGroup(task.status) === 'scheduled').length],
+    ['scheduled', '已排程', planningTasks.filter((task) => getPlanningTaskStatusGroup(task.status) === 'scheduled').length],
   ]
   const visiblePlanningTasks = taskHomeFilter === 'all'
     ? planningTasks
@@ -1675,21 +1567,143 @@ export function PlanningWorkbench({
     )
   }
 
+  const currentPlanningTask = planningTasks.find((task) => task.id === currentPlanningTaskId) ?? null
+  const latestCompletedScheme = taskQueue.find((job) => job.status === 'completed') ?? null
+  const canOpenAiStep = hasGeneratedPlan && !isGeneratedPlanStale
+  const canOpenReviewStep = Boolean(
+    hasImportedSchedule ||
+    currentPlanningTask?.status === 'scheduled' ||
+    currentPlanningTask?.reviewState?.scheduledMeetings?.length,
+  )
+  const workflowSteps = [
+    {
+      key: 'prepare',
+      index: '1',
+      label: '准备清单',
+      hint: '范围与规则',
+      available: true,
+      completed: hasGeneratedPlan,
+    },
+    {
+      key: 'ai',
+      index: '2',
+      label: '生成方案',
+      hint: 'AI 候选方案',
+      available: canOpenAiStep || activeWorkflowStep === 'ai' || canOpenReviewStep,
+      completed: Boolean(latestCompletedScheme || canOpenReviewStep),
+    },
+    {
+      key: 'review',
+      index: '3',
+      label: '调整确认',
+      hint: '日历与冲突',
+      available: canOpenReviewStep || activeWorkflowStep === 'review',
+      completed: currentPlanningTask?.status === 'scheduled',
+    },
+  ]
 
   return (
     <div
-      ref={workspaceRef}
       className={[
         'planner-generation-page',
         `planner-workflow-${activeWorkflowStep}`,
         activeWorkflowStep === 'review' ? 'planner-step-review' : '',
       ].filter(Boolean).join(' ')}
     >
-      <nav className="planner-stage-nav" aria-label="排程工作区导航">
-        <button type="button" className="nx-btn nx-btn-quiet planner-back-link" onClick={() => setPlannerView('home')}>
-          <ChevronLeft size={14} />返回任务中心
-        </button>
-      </nav>
+      <section className="panel planner-task-workflow-head">
+        <div className="planner-task-title">
+          <div className="planner-breadcrumb">
+            <button
+              type="button"
+              className="planner-breadcrumb-link"
+              onClick={() => setPlannerView('home')}
+              title="返回排程任务中心"
+            >
+              排程任务中心
+            </button>
+            <span className="planner-breadcrumb-sep" aria-hidden="true">›</span>
+            {planningTasks.length > 0 ? (
+              <select
+                className="planner-task-switcher"
+                value={currentPlanningTaskId}
+                onChange={(event) => {
+                  const nextTask = planningTasks.find((task) => task.id === event.target.value)
+                  if (nextTask) openPlanningTask(nextTask)
+                }}
+                aria-label="切换排程任务"
+                title="切换排程任务"
+              >
+                {!currentPlanningTaskId ? <option value="">未命名任务</option> : null}
+                {planningTasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.name}（{getPlanningTaskStatusLabel(task.status)}）
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <strong className="planner-breadcrumb-current">
+                {currentPlanningTask?.name || (hasCompleteRange ? formatQueueDateRange(range) : '未命名任务')}
+              </strong>
+            )}
+          </div>
+          <p>
+            {hasCompleteRange ? `${formatQueueDateRange(range)} · ` : ''}
+            {hasGeneratedPlan
+              ? `${generatedInstances.length} 个待排会议实例 · 任务可生成多个候选方案，采用其一后进入调整`
+              : hasValidRange
+                ? `预计 ${pendingInstances.length} 个会议实例`
+                : '选择范围后生成待排清单'}
+          </p>
+        </div>
+        <div className="planner-task-workflow-actions">
+          <div className="planner-task-stepper" role="tablist" aria-label="排程任务步骤">
+            {workflowSteps.map((step) => {
+              const className = [
+                'planner-task-step',
+                activeWorkflowStep === step.key ? 'planner-task-step-active' : '',
+                step.completed ? 'planner-task-step-complete' : '',
+                !step.available ? 'planner-task-step-locked' : '',
+              ].filter(Boolean).join(' ')
+
+              return (
+                <button
+                  key={step.key}
+                  type="button"
+                  className={className}
+                  onClick={() => setActiveWorkflowStep(step.key)}
+                  role="tab"
+                  aria-selected={activeWorkflowStep === step.key}
+                  disabled={!step.available}
+                >
+                  <span>{step.completed ? <Check size={12} /> : step.index}</span>
+                  <span className="planner-task-step-copy">
+                    <strong>{step.label}</strong>
+                    <small>{step.hint}</small>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {activeWorkflowStep === 'prepare' && canOpenAiStep ? (
+            <button
+              type="button"
+              className="primary-button planner-workflow-primary"
+              onClick={() => setActiveWorkflowStep('ai')}
+            >
+              继续生成方案
+            </button>
+          ) : null}
+          {activeWorkflowStep === 'ai' && latestCompletedScheme ? (
+            <button
+              type="button"
+              className="primary-button planner-workflow-primary"
+              onClick={() => importJobResult(latestCompletedScheme, { importToReview: true, markImported: true })}
+            >
+              采用最新方案
+            </button>
+          ) : null}
+        </div>
+      </section>
 
       <div className="planner-task-layout">
         <div className="planner-task-main">
@@ -1955,43 +1969,13 @@ export function PlanningWorkbench({
         </div>
         <div className="planner-preview-toolbar">
           <div className="search-box">
-            <Search size={15} />
-            <input
-              value={previewSearch}
-              onChange={(event) => setPreviewSearch(event.target.value)}
-              placeholder="搜索会议名称、参会人或备注"
-              aria-label="搜索待排清单"
-            />
+            <List size={15} />
+            <input readOnly value="" placeholder="搜索会议名称、负责人或备注" />
           </div>
-          <button className="ghost-button" type="button" onClick={() => setPreviewFiltersOpen((current) => !current)} aria-expanded={previewFiltersOpen}>
+          <button className="ghost-button" type="button">
             筛选
             <ChevronDown size={14} />
           </button>
-        </div>
-        {previewFiltersOpen ? (
-          <div className="nx-row planner-preview-filters">
-            <label className="nx-field">
-              <span>会议频率</span>
-              <select className="nx-input" value={previewFrequency} onChange={(event) => setPreviewFrequency(event.target.value)}>
-                <option value="all">全部频率</option>
-                {Object.entries(FREQUENCY_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-              </select>
-            </label>
-            <label className="nx-field">
-              <span>资料情况</span>
-              <select className="nx-input" value={previewAttention} onChange={(event) => setPreviewAttention(event.target.value)}>
-                <option value="all">全部资料</option>
-                <option value="missing">缺参会人或时长</option>
-                <option value="constraints">含备注或关联约束</option>
-              </select>
-            </label>
-          </div>
-        ) : null}
-        <div className="planner-preview-result-count">
-          <span>显示 {planningPreviewRows.length} / {planningPreviewInstances.length} 条待排会议</span>
-          {previewSearch || previewFrequency !== 'all' || previewAttention !== 'all' ? (
-            <button className="nx-btn nx-btn-quiet" type="button" onClick={() => { setPreviewSearch(''); setPreviewFrequency('all'); setPreviewAttention('all') }}>清除筛选</button>
-          ) : null}
         </div>
         <div className="planner-instance-table-wrap">
           <div className="planner-instance-list-head">
@@ -2020,7 +2004,7 @@ export function PlanningWorkbench({
             {!hasGeneratedPlan ? (
               <div className="planner-instance-preview-empty">点击“生成清单”后显示待排会议实例。</div>
             ) : planningPreviewRows.length === 0 ? (
-              <div className="planner-instance-preview-empty">当前搜索或筛选条件下没有会议，请调整条件或清除筛选。</div>
+              <div className="planner-instance-preview-empty">当前范围内暂无会议实例。</div>
             ) : null}
           </div>
         </div>
@@ -2104,7 +2088,7 @@ export function PlanningWorkbench({
         <div className="planner-task-section">
           <div className="planner-task-section-head">
             <strong>候选方案（本任务）</strong>
-            <span>已生成 {taskQueue.length} 个 · 查看详情后选用，进入第 3 步审核</span>
+            <span>已生成 {taskQueue.length} 个 · 点击查看详情，采用后进入第 3 步调整</span>
           </div>
           {groupedTaskQueue.length > 0 ? (
             <div className="planner-task-queue-list">
@@ -2154,9 +2138,9 @@ export function PlanningWorkbench({
                                     importJobResult(job, { importToReview: true, markImported: true })
                                   }}
                                   onKeyDown={(event) => event.stopPropagation()}
-                                  title="选用此方案并进入审核"
+                                  title="采用此方案并进入调整"
                                 >
-                                  选用并进入审核
+                                  采用
                                 </button>
                               ) : null}
                               <button
@@ -2401,7 +2385,7 @@ export function PlanningWorkbench({
                 }}
                 disabled={!selectedSchemeData?.job}
               >
-                选用并进入审核
+                导入审核区
               </button>
             </div>
           </div>

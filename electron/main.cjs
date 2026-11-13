@@ -1,5 +1,4 @@
 const path = require('path')
-const fs = require('fs')
 const http = require('http')
 const { app, BrowserWindow, ipcMain, shell } = require('electron')
 const { ConfigStore } = require('./config-store.cjs')
@@ -7,11 +6,6 @@ const { createAiJobService } = require('./ai-jobs.cjs')
 
 const isDev = !app.isPackaged
 const devServerUrl = process.env.ELECTRON_RENDERER_URL || 'http://127.0.0.1:4173'
-if (app.isPackaged) {
-  const optimizedDataPath = path.join(app.getPath('appData'), 'EO-Meeting-Manager-Optimized')
-  fs.mkdirSync(optimizedDataPath, { recursive: true })
-  app.setPath('userData', optimizedDataPath)
-}
 const configStore = new ConfigStore(app)
 const aiJobService = createAiJobService(app, configStore)
 let mainWindow = null

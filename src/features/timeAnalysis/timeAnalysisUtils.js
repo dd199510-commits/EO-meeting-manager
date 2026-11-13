@@ -1,7 +1,5 @@
 import { SAMPLE_MEETING_TSV, TIME_ANALYSIS_COLUMNS } from './timeAnalysisData.js'
 import { HISTORICAL_MEETING_TSV } from './historicalMeetingData.js'
-import { parseDelimitedText } from '../../lib/delimitedText.js'
-import { parseCalendarDate } from '../../lib/calendarDate.js'
 
 export const STATUS_RULES = [
   { key: 'veryEarly', label: '过早结束', tone: 'danger', test: (value) => value < -30 },
@@ -85,7 +83,11 @@ export function parseSampleRecords() {
 }
 
 export function parsePastedMeetings(text) {
-  const rows = parseDelimitedText(text)
+  const rows = String(text || '')
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.split(/\t|,/).map((cell) => cell.trim()))
+    .filter((row) => row.some(Boolean))
 
   if (rows.length === 0) return []
 
@@ -431,7 +433,7 @@ function clearDerivedForEdit(record, key) {
   return nextRecord
 }
 
-export function resolveColumnKey(label) {
+function resolveColumnKey(label) {
   const rawValue = normalizeCellValue(label)
   const raw = rawValue instanceof Date ? '' : String(rawValue).trim()
   const cleaned = raw.replace(/\s/g, '')
@@ -439,7 +441,27 @@ export function resolveColumnKey(label) {
 }
 
 function normalizeDate(value) {
-  return parseCalendarDate(value)
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return formatDate(value)
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatDate(excelSerialToDate(value))
+  }
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const normalized = raw.replace(/\//g, '-')
+  const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (match) {
+    const [, year, month, day] = match
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  const shortMatch = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/)
+  if (shortMatch) {
+    const [, month, day, yearPart] = shortMatch
+    const year = yearPart.length === 2 ? `20${yearPart}` : yearPart
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  return raw
 }
 
 function normalizeTime(value) {
@@ -502,7 +524,7 @@ function normalizeCellValue(value) {
   return String(value).trim()
 }
 
-export function findHeaderIndex(rows) {
+function findHeaderIndex(rows) {
   let bestIndex = 0
   let bestScore = -1
   rows.slice(0, 12).forEach((row, index) => {
@@ -526,6 +548,24 @@ function scoreSheetRows(rows) {
     0,
   )
   return requiredScore + timeScore + Math.min(dataRows, 100) / 10
+}
+
+function excelSerialToDate(serial) {
+  const utcDays = Math.floor(serial - 25569)
+  const utcValue = utcDays * 86400
+  const date = new Date(utcValue * 1000)
+  const fractionalDay = serial - Math.floor(serial)
+  const totalSeconds = Math.round(86400 * fractionalDay)
+  date.setSeconds(date.getSeconds() + totalSeconds)
+  return date
+}
+
+function formatDate(date) {
+  const adjusted = new Date(date)
+  if (adjusted.getHours() === 23 && adjusted.getMinutes() >= 50) {
+    adjusted.setDate(adjusted.getDate() + 1)
+  }
+  return `${adjusted.getFullYear()}-${String(adjusted.getMonth() + 1).padStart(2, '0')}-${String(adjusted.getDate()).padStart(2, '0')}`
 }
 
 function getQuarter(date) {

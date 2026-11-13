@@ -2,7 +2,6 @@ import { INITIAL_CONTACTS, INITIAL_MEETINGS, INITIAL_SCHEDULED, normalizeMeeting
 import { normalizeContact, resolveAttendeeRefs } from './contacts'
 import { normalizeNoticeTemplates } from '../features/reserveNotice/notificationTemplates'
 import { IS_PUBLIC_EMPTY_BUILD } from './publicBuild'
-import { blockStorageKey, persistJson } from './persistence'
 
 function createEmptyStorage() {
   return {
@@ -53,7 +52,6 @@ export function readStorage() {
         : [],
     }
   } catch {
-    blockStorageKey(STORAGE_KEY)
     if (IS_PUBLIC_EMPTY_BUILD) return createEmptyStorage()
 
     const contacts = INITIAL_CONTACTS.map(normalizeContact)
@@ -72,5 +70,5 @@ export function readStorage() {
 }
 
 export function persistStorage(data) {
-  return persistJson(STORAGE_KEY, data)
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }

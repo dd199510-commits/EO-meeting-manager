@@ -642,22 +642,3 @@
   border-radius: var(--nx-r-sm);
   background: var(--nx-warn-soft);
 }
-.nx-analysis-filter-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; margin-bottom: 14px; border: 1px solid var(--nx-line, #dce5ed); border-radius: 12px; background: var(--nx-surface, #fff); font-size: 12px; }
-.nx-analysis-filter-bar > span { color: #64748b; }
-.nx-analysis-filter-chips { display: flex; flex: 1; flex-wrap: wrap; gap: 6px; }
-.nx-analysis-filter-chip { background: #eef6ff; color: #1765c1; min-height: 30px; }
-.nx-analysis-filter-chip > span { margin-left: 6px; }
-.nx-analysis-export-menu { position: relative; }
-.nx-analysis-export-menu > summary { display: flex; list-style: none; cursor: pointer; align-items: center; gap: 6px; }
-.nx-analysis-export-popover { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: 250px; padding: 14px; background: #fff; border: 1px solid #dce5ed; border-radius: 12px; box-shadow: 0 12px 32px #102b4726; display: grid; gap: 7px; }
-.nx-analysis-export-popover .nx-btn { justify-content: flex-start; }
-.nx-import-preview { max-height: 90vh; overflow-y: auto; }
-.nx-import-controls, .nx-import-mapping-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.nx-import-mapping { padding: 12px 0; }
-.nx-import-mapping > summary { cursor: pointer; font-weight: 600; margin-bottom: 12px; }
-.nx-import-mode { display: grid; gap: 10px; border: 1px solid #dce5ed; border-radius: 10px; padding: 12px; margin: 10px 0; }
-.nx-import-mode label { display: flex; align-items: center; gap: 8px; }
-.nx-import-summary { display: flex; flex-wrap: wrap; gap: 18px; padding: 12px; background: #f0f7fc; border-radius: 8px; font-size: 13px; }
-.nx-import-table-scroll { overflow: auto; max-height: 280px; margin-top: 12px; }
-.nx-import-note { color: #64748b; font-size: 12px; line-height: 1.7; }
-@media (max-width: 720px) { .nx-import-controls, .nx-import-mapping-grid { grid-template-columns: 1fr; } .nx-analysis-filter-bar { align-items: flex-start; } .nx-analysis-filter-chips { flex-basis: 100%; } }

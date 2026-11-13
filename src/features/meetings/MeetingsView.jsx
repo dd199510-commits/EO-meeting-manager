@@ -67,10 +67,6 @@ export function MeetingsView({
 }) {
   const SORT_STORAGE_KEY = 'meeting-manager:ui:meetings-sort:v1'
   const VALID_SORTS = ['frequency', 'nextDate', 'lastDate', 'name', 'custom']
-  const [initialWorkspace] = useState(() => {
-    try { return JSON.parse(window.localStorage.getItem('meeting-manager:ui:meeting-workspace:v1') || '{}') }
-    catch { return {} }
-  })
   const [sortBy, setSortBy] = useState(() => {
     const saved = typeof window !== 'undefined' ? window.localStorage.getItem(SORT_STORAGE_KEY) : ''
     return VALID_SORTS.includes(saved) ? saved : 'frequency'
@@ -81,22 +77,10 @@ export function MeetingsView({
   useEffect(() => {
     window.localStorage.setItem(SORT_STORAGE_KEY, sortBy)
   }, [sortBy])
-  const [selectedMeetingId, setSelectedMeetingId] = useState(initialWorkspace.selectedMeetingId || '')
-  const [navigatorFilter, setNavigatorFilter] = useState(() => filters.search?.trim() || filters.issue && filters.issue !== 'all' ? { type: 'all', key: 'all' } : initialWorkspace.navigatorFilter || { type: 'all', key: 'all' })
-  const [quickFilter, setQuickFilter] = useState(() => filters.search?.trim() || filters.issue && filters.issue !== 'all' ? 'all' : initialWorkspace.quickFilter || 'all')
+  const [selectedMeetingId, setSelectedMeetingId] = useState('')
+  const [navigatorFilter, setNavigatorFilter] = useState({ type: 'all', key: 'all' })
+  const [quickFilter, setQuickFilter] = useState('all')
   const moreMenuRef = useRef(null)
-  const listRef = useRef(null)
-
-  useEffect(() => {
-    try { window.localStorage.setItem('meeting-manager:ui:meeting-workspace:v1', JSON.stringify({ selectedMeetingId, navigatorFilter, quickFilter })) }
-    catch { /* Business storage failures are reported separately. */ }
-  }, [selectedMeetingId, navigatorFilter, quickFilter])
-
-  useEffect(() => {
-    const element = listRef.current
-    if (!element) return
-    try { element.scrollTop = Number(window.sessionStorage.getItem('meeting-manager:ui:meeting-list-scroll')) || 0 } catch { /* Optional view state. */ }
-  }, [])
 
   const summaryFilters = useMemo(
     () => ({
@@ -288,7 +272,7 @@ export function MeetingsView({
           {canDrag ? <GripVertical size={14} className="mv-drag" /> : null}
           <div>
             <strong>{meeting.name}</strong>
-            {meeting.notes?.trim() && <span>{meeting.notes.trim()}</span>}
+            <span>{meeting.notes?.trim() || '暂无备注'}</span>
           </div>
         </div>
         <div className="mv-cell">
@@ -309,8 +293,8 @@ export function MeetingsView({
           <span>{attendeeSummary}</span>
         </div>
         <div className="mv-cell mv-cell-signals">
-          {linkedCount > 0 && <span><Link2 size={12} />{linkedCount}</span>}
-          {historyCount > 0 ? <span>{historyCount} 次</span> : linkedCount === 0 && <span className="mv-muted">—</span>}
+          {linkedCount > 0 ? <span><Link2 size={12} />{linkedCount}</span> : <span className="mv-muted">无依赖</span>}
+          <span>{historyCount} 次</span>
         </div>
         <div className="mv-actions">
           <button
@@ -658,9 +642,7 @@ export function MeetingsView({
           <span>信号</span>
           <span />
         </div>
-        <div className="mv-list" ref={listRef} onScroll={event => {
-          try { window.sessionStorage.setItem('meeting-manager:ui:meeting-list-scroll', String(event.currentTarget.scrollTop)) } catch { /* Optional view state. */ }
-        }}>
+        <div className="mv-list">
           {displayedMeetings.map((meeting) => renderMeetingRow(meeting))}
           {displayedMeetings.length === 0 ? (
             <div className="mv-list-empty">

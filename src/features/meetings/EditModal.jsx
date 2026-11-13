@@ -11,7 +11,6 @@ import {
   updateMeetingFrequency,
 } from '../../data/meetingData'
 import { MeetingNotesField } from './MeetingNotesField'
-import { parseCalendarDate } from '../../lib/calendarDate'
 import { AttendeeResolver } from './AttendeeResolver'
 import { appendAttendeeNames, removeAttendeeNames } from '../../lib/contacts'
 
@@ -31,11 +30,11 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-    const invalidDates = inputDates.filter(item => !parseCalendarDate(item))
-    const dates = inputDates.map(parseCalendarDate).filter(Boolean)
+    const invalidDates = inputDates.filter((item) => !/^\d{4}-\d{2}-\d{2}$/.test(item))
+    const dates = inputDates.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item))
 
     if (invalidDates.length > 0) {
-      setHistoryError(`日期无效或格式不正确：${invalidDates.join('、')}`)
+      setHistoryError(`日期格式不正确：${invalidDates.join('、')}`)
     } else {
       setHistoryError('')
     }
@@ -106,7 +105,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
       onClick={requestClose}
     >
       <div
-        className={open && !isClosing ? 'modal-card modal-card-open nx-meeting-editor' : 'modal-card modal-card-closing nx-meeting-editor'}
+        className={open && !isClosing ? 'modal-card modal-card-open' : 'modal-card modal-card-closing'}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-header">
@@ -116,7 +115,14 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
           </button>
         </div>
         <div className="form-grid">
-
+          <label className="field">
+            <span>会议前缀</span>
+            <input
+              value={formData.meetingPrefix ?? ''}
+              onChange={(event) => setFormData({ ...formData, meetingPrefix: event.target.value })}
+              placeholder="可留空"
+            />
+          </label>
           <label className="field field-span-2">
             <span>会议名称</span>
             <input
@@ -124,10 +130,8 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
               onChange={(event) => setFormData({ ...formData, name: event.target.value })}
             />
           </label>
-          <label className="field"><span>会议时长（分钟）</span><input type="number" min="1" step="5" value={formData.duration} onChange={event=>setFormData({...formData,duration:Number(event.target.value)||0})} /></label>
           <div className="field field-span-2 rule-builder">
             <span>频率设置</span>
-            <details className="nx-advanced-meeting-settings"><summary>{FREQUENCY_LABELS[frequencyType]} · {formData.duration || 0} 分钟 · 点击设置频率规则</summary>
             <div className="rule-builder-shell">
               <div className="rule-builder-head">
                 <label className="field inline-mini-field rule-field-type">
@@ -145,7 +149,16 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                     ))}
                   </select>
                 </label>
-
+                <label className="field inline-mini-field rule-field-duration">
+                  <span>会议时长</span>
+                  <input
+                    type="number"
+                    value={formData.duration}
+                    onChange={(event) =>
+                      setFormData({ ...formData, duration: Number(event.target.value) || 0 })
+                    }
+                  />
+                </label>
               </div>
 
               {frequencyType === 'weekly' ? (
@@ -312,7 +325,6 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
                 <div className="warning-text rule-warning-text">天数不足的月份会自动调整到当月最后一天。</div>
               ) : null}
             </div>
-            </details>
           </div>
         </div>
         <div className="modal-section modal-section-static modal-section-fields">
@@ -366,14 +378,6 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
             </label>
           </div>
         </div>
-        <details className="nx-advanced-meeting-settings"><summary>高级设置</summary>          <label className="field">
-            <span>会议前缀</span>
-            <input
-              value={formData.meetingPrefix ?? ''}
-              onChange={(event) => setFormData({ ...formData, meetingPrefix: event.target.value })}
-              placeholder="可留空"
-            />
-          </label></details>
         <div className="modal-section">
           <button
             type="button"
@@ -444,7 +448,7 @@ export function EditModal({ meeting, meetings = [], contacts = [], open, isClosi
           <button
             className="primary-button"
             onClick={() => onSave(formData)}
-            disabled={!formData.name?.trim() || Number(formData.duration) <= 0}
+            disabled={!formData.name?.trim()}
             title={!formData.name?.trim() ? '请先填写会议名称' : '保存会议'}
           >
             保存
