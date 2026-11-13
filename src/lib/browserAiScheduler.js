@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from './scopedStorage.js'
 const CONFIG_STORAGE_KEY = 'meeting-manager-browser-ai-config'
 const JOBS_STORAGE_KEY = 'meeting-manager-browser-ai-jobs'
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled', 'expired', 'deleted'])
@@ -51,7 +52,7 @@ const MEETING_SCHEDULE_SCHEMA = {
 
 function readJson(key, fallback) {
   try {
-    const raw = window.localStorage.getItem(key)
+    const raw = scopedLocalStorage.getItem(key)
     return raw ? JSON.parse(raw) : fallback
   } catch {
     return fallback
@@ -59,7 +60,7 @@ function readJson(key, fallback) {
 }
 
 function writeJson(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value))
+  scopedLocalStorage.setItem(key, JSON.stringify(value))
 }
 
 function normalizeProvider(provider) {

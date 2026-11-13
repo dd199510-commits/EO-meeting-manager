@@ -1,6 +1,7 @@
+import { scopedLocalStorage } from '../../lib/scopedStorage.js'
 export function readLogs(storageKey) {
   try {
-    const raw = window.localStorage.getItem(storageKey)
+    const raw = scopedLocalStorage.getItem(storageKey)
     return raw ? JSON.parse(raw) : []
   } catch {
     return []
@@ -8,7 +9,7 @@ export function readLogs(storageKey) {
 }
 
 export function persistLogs(storageKey, logs) {
-  window.localStorage.setItem(storageKey, JSON.stringify(logs))
+  scopedLocalStorage.setItem(storageKey, JSON.stringify(logs))
 }
 
 export function createLog(actionType, targetName, detail, changes = []) {

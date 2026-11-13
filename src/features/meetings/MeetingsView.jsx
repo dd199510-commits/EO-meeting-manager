@@ -1,3 +1,4 @@
+import { scopedLocalStorage, scopedSessionStorage } from '../../lib/scopedStorage.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CalendarDays,
@@ -68,18 +69,18 @@ export function MeetingsView({
   const SORT_STORAGE_KEY = 'meeting-manager:ui:meetings-sort:v1'
   const VALID_SORTS = ['frequency', 'nextDate', 'lastDate', 'name', 'custom']
   const [initialWorkspace] = useState(() => {
-    try { return JSON.parse(window.localStorage.getItem('meeting-manager:ui:meeting-workspace:v1') || '{}') }
+    try { return JSON.parse(scopedLocalStorage.getItem('meeting-manager:ui:meeting-workspace:v1') || '{}') }
     catch { return {} }
   })
   const [sortBy, setSortBy] = useState(() => {
-    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(SORT_STORAGE_KEY) : ''
+    const saved = typeof window !== 'undefined' ? scopedLocalStorage.getItem(SORT_STORAGE_KEY) : ''
     return VALID_SORTS.includes(saved) ? saved : 'frequency'
   })
   const [draggedMeetingId, setDraggedMeetingId] = useState(null)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
 
   useEffect(() => {
-    window.localStorage.setItem(SORT_STORAGE_KEY, sortBy)
+    scopedLocalStorage.setItem(SORT_STORAGE_KEY, sortBy)
   }, [sortBy])
   const [selectedMeetingId, setSelectedMeetingId] = useState(initialWorkspace.selectedMeetingId || '')
   const [navigatorFilter, setNavigatorFilter] = useState(() => filters.search?.trim() || filters.issue && filters.issue !== 'all' ? { type: 'all', key: 'all' } : initialWorkspace.navigatorFilter || { type: 'all', key: 'all' })
@@ -88,14 +89,14 @@ export function MeetingsView({
   const listRef = useRef(null)
 
   useEffect(() => {
-    try { window.localStorage.setItem('meeting-manager:ui:meeting-workspace:v1', JSON.stringify({ selectedMeetingId, navigatorFilter, quickFilter })) }
+    try { scopedLocalStorage.setItem('meeting-manager:ui:meeting-workspace:v1', JSON.stringify({ selectedMeetingId, navigatorFilter, quickFilter })) }
     catch { /* Business storage failures are reported separately. */ }
   }, [selectedMeetingId, navigatorFilter, quickFilter])
 
   useEffect(() => {
     const element = listRef.current
     if (!element) return
-    try { element.scrollTop = Number(window.sessionStorage.getItem('meeting-manager:ui:meeting-list-scroll')) || 0 } catch { /* Optional view state. */ }
+    try { element.scrollTop = Number(scopedSessionStorage.getItem('meeting-manager:ui:meeting-list-scroll')) || 0 } catch { /* Optional view state. */ }
   }, [])
 
   const summaryFilters = useMemo(
@@ -659,7 +660,7 @@ export function MeetingsView({
           <span />
         </div>
         <div className="mv-list" ref={listRef} onScroll={event => {
-          try { window.sessionStorage.setItem('meeting-manager:ui:meeting-list-scroll', String(event.currentTarget.scrollTop)) } catch { /* Optional view state. */ }
+          try { scopedSessionStorage.setItem('meeting-manager:ui:meeting-list-scroll', String(event.currentTarget.scrollTop)) } catch { /* Optional view state. */ }
         }}>
           {displayedMeetings.map((meeting) => renderMeetingRow(meeting))}
           {displayedMeetings.length === 0 ? (

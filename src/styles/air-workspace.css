@@ -57,6 +57,7 @@
 .eo-nav-item:hover { color: #506fb6; background: #eef3fc; }
 .eo-nav-item-active { color: #4f71ba; background: #e8effd; font-weight: 600; }
 .eo-topbar-tools { position: relative; display: flex; align-items: center; gap: 18px; padding-left: 22px; border-left: 1px solid #e0e7f2; }
+.eo-preview-badge { padding: 4px 8px; border: 1px solid #dce5f5; border-radius: 6px; color: #6984b9; background: #f0f5ff; font-size: 11px; white-space: nowrap; }
 .eo-icon-action { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 7px; color: #728099; background: transparent; cursor: pointer; flex-shrink: 0; }
 .eo-icon-action:hover { color: #5375bd; background: #eaf0fc; }
 .eo-account-menu, .eo-stage-menu { position: relative; }

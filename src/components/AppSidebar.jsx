@@ -32,6 +32,7 @@ export function AppSidebar({ activeTab, onTabChange, onImportData, onExport, onU
           aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTabChange(id)}>{label}</button>)}
       </nav>
       <div className="eo-topbar-tools">
+        <span className="eo-preview-badge" title="独立测试环境，浏览器数据与原版分开保存">V4.7 测试版</span>
         <button className="eo-icon-action" aria-label={searchOpen ? '关闭搜索' : '搜索会议'} title="搜索会议" onClick={() => setSearchOpen(value => !value)} type="button">
           {searchOpen ? <X size={19} /> : <Search size={19} />}
         </button>

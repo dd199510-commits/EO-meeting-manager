@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from '../../lib/scopedStorage.js'
 import { getMeetingFrequencyType } from '../../data/meetingData'
 import { generateOccurrencesInRange } from '../../lib/meetingFrequency'
 
@@ -226,7 +227,7 @@ export function sanitizeAiInputMeetings(inputMeetings) {
 
 export function readAiState(storageKey) {
   try {
-    const raw = window.localStorage.getItem(storageKey)
+    const raw = scopedLocalStorage.getItem(storageKey)
     if (!raw) return DEFAULT_AI_STATE
 
     return normalizeAiState(JSON.parse(raw))
@@ -280,7 +281,7 @@ export function normalizeAiState(input) {
 }
 
 export function persistAiState(storageKey, data) {
-  window.localStorage.setItem(storageKey, JSON.stringify(data))
+  scopedLocalStorage.setItem(storageKey, JSON.stringify(data))
 }
 
 export function optimizeInputForAI(inputMeetings, exportBatch = null, sourceMeetings = []) {

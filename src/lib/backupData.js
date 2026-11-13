@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from './scopedStorage.js'
 const RECOVERY_STORAGE_KEY = 'meeting-manager:recovery-point:v1'
 const BACKUP_TIME_KEY = 'meeting-manager:ui:last-backup-at:v1'
 
@@ -23,7 +24,7 @@ export function readModuleBackupData() {
   return Object.fromEntries(
     Object.entries(MODULE_STORAGE_KEYS).map(([name, storageKey]) => [
       name,
-      parseStoredValue(window.localStorage.getItem(storageKey) ?? (name === 'timeAnalysisTrackedGroups' ? window.localStorage.getItem('meeting-manager:time-analysis-tracked-groups:v4') : null)),
+      parseStoredValue(scopedLocalStorage.getItem(storageKey) ?? (name === 'timeAnalysisTrackedGroups' ? scopedLocalStorage.getItem('meeting-manager:time-analysis-tracked-groups:v4') : null)),
     ]),
   )
 }
@@ -36,17 +37,17 @@ export function restoreModuleBackupData(moduleData) {
 
     const value = moduleData[name]
     if (value == null) {
-      window.localStorage.removeItem(storageKey)
+      scopedLocalStorage.removeItem(storageKey)
       return
     }
 
-    window.localStorage.setItem(storageKey, JSON.stringify(value))
+    scopedLocalStorage.setItem(storageKey, JSON.stringify(value))
   })
 }
 
 export function saveRecoveryPoint(payload) {
   try {
-    window.localStorage.setItem(
+    scopedLocalStorage.setItem(
       RECOVERY_STORAGE_KEY,
       JSON.stringify({ savedAt: new Date().toISOString(), payload }),
     )
@@ -58,7 +59,7 @@ export function saveRecoveryPoint(payload) {
 
 export function readRecoveryPoint() {
   try {
-    const raw = window.localStorage.getItem(RECOVERY_STORAGE_KEY)
+    const raw = scopedLocalStorage.getItem(RECOVERY_STORAGE_KEY)
     const point = raw ? JSON.parse(raw) : null
     return point?.payload && typeof point.savedAt === 'string' ? point : null
   } catch { return null }
@@ -73,10 +74,10 @@ export function getModuleStorageEntries(moduleData) {
 
 export function recordBackupTime() {
   const time = new Date().toISOString()
-  try { window.localStorage.setItem(BACKUP_TIME_KEY, time) } catch { /* Download remains usable. */ }
+  try { scopedLocalStorage.setItem(BACKUP_TIME_KEY, time) } catch { /* Download remains usable. */ }
   return time
 }
 
 export function readBackupTime() {
-  try { return window.localStorage.getItem(BACKUP_TIME_KEY) || '' } catch { return '' }
+  try { return scopedLocalStorage.getItem(BACKUP_TIME_KEY) || '' } catch { return '' }
 }

@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from '../../lib/scopedStorage.js'
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import {
   Bot,
@@ -277,7 +278,7 @@ const PLANNER_WORKSPACE_KEY = 'meeting-manager:ui:planner-workspace:v1:'
 function readPlanningWorkspace(taskId) {
   if (!taskId || typeof window === 'undefined') return {}
   try {
-    const stored = JSON.parse(window.localStorage.getItem(`${PLANNER_WORKSPACE_KEY}${taskId}`) || '{}')
+    const stored = JSON.parse(scopedLocalStorage.getItem(`${PLANNER_WORKSPACE_KEY}${taskId}`) || '{}')
     return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}
   } catch {
     return {}
@@ -287,7 +288,7 @@ function readPlanningWorkspace(taskId) {
 function savePlanningWorkspace(taskId, patch) {
   if (!taskId || typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(`${PLANNER_WORKSPACE_KEY}${taskId}`, JSON.stringify({
+    scopedLocalStorage.setItem(`${PLANNER_WORKSPACE_KEY}${taskId}`, JSON.stringify({
       ...readPlanningWorkspace(taskId), ...patch,
     }))
   } catch { /* UI position is optional when local storage is unavailable. */ }

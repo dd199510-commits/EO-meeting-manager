@@ -1,3 +1,4 @@
+import { scopedSessionStorage } from '../lib/scopedStorage.js'
 import { useMemo, useState } from 'react'
 
 const ACCESS_SESSION_KEY = 'meeting-manager:access-unlocked:v1'
@@ -15,7 +16,7 @@ export function AccessGate({ children }) {
   const lockEnabled = useMemo(() => isAccessLockEnabled(), [])
   const [unlocked, setUnlocked] = useState(() => {
     if (!lockEnabled || typeof window === 'undefined') return true
-    return window.sessionStorage.getItem(ACCESS_SESSION_KEY) === 'unlocked'
+    return scopedSessionStorage.getItem(ACCESS_SESSION_KEY) === 'unlocked'
   })
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,7 +26,7 @@ export function AccessGate({ children }) {
   function handleSubmit(event) {
     event.preventDefault()
     if (password === getAccessPassword()) {
-      window.sessionStorage.setItem(ACCESS_SESSION_KEY, 'unlocked')
+      scopedSessionStorage.setItem(ACCESS_SESSION_KEY, 'unlocked')
       setUnlocked(true)
       return
     }

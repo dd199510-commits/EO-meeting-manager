@@ -1,16 +1,13 @@
-name: Deploy web app to GitHub Pages
+name: Deploy production V4.5 and preview V4.7
 
 on:
   push:
     branches:
       - main
-      - master
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -19,45 +16,187 @@ env:
   VITE_ACCESS_PASSWORD: 'EO2026'
 
 concurrency:
+  # Shared with the existing Pages workflow, never split this by branch.
   group: pages
   cancel-in-progress: false
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout
+      - name: Check out production only from main
         uses: actions/checkout@v4
+        with:
+          ref: refs/heads/main
+          path: production
+          persist-credentials: false
 
-      - name: Setup Node
+      - name: Check out preview only from preview/v4.7
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/preview/v4.7
+          path: preview
+          persist-credentials: false
+
+      - name: Verify branch versions and package locks
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { execFileSync } = require('node:child_process');
+          const targets = [
+            ['production', /^4\.5(?:\.|$)/, 'refs/heads/main'],
+            ['preview', /^4\.7(?:\.|$)/, 'refs/heads/preview/v4.7'],
+          ];
+          for (const [directory, expectedVersion, ref] of targets) {
+            const pkg = JSON.parse(fs.readFileSync(`${directory}/package.json`, 'utf8'));
+            const lock = JSON.parse(fs.readFileSync(`${directory}/package-lock.json`, 'utf8'));
+            if (!expectedVersion.test(pkg.version)) throw new Error(`${directory}: unexpected version ${pkg.version}`);
+            if (pkg.version !== lock.version || pkg.version !== lock.packages[''].version) throw new Error(`${directory}: package lock version mismatch`);
+            for (const key of ['dependencies', 'devDependencies']) {
+              const expected = Object.entries(pkg[key] || {}).sort();
+              const actual = Object.entries(lock.packages[''][key] || {}).sort();
+              if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error(`${directory}: package lock ${key} mismatch`);
+            }
+            const sha = execFileSync('git', ['-C', directory, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+            console.log(JSON.stringify({ directory, sourceRef: ref, sha, version: pkg.version }));
+          }
+          NODE
+
+      - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            production/package-lock.json
+            preview/package-lock.json
 
-      - name: Install dependencies
+      - name: Install production dependencies
+        working-directory: production
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Build production V4.5 without a preview namespace
+        working-directory: production
+        env:
+          VITE_STORAGE_NAMESPACE: ''
+        shell: bash
+        run: |
+          node <<'NODE'
+          if (process.env.VITE_PUBLIC_EMPTY_DATA !== 'true') throw new Error('Production empty-data gate is required');
+          if (process.env.VITE_ENABLE_ACCESS_LOCK !== 'true' || !process.env.VITE_ACCESS_PASSWORD) throw new Error('Production access gate is required');
+          if (process.env.VITE_STORAGE_NAMESPACE !== '') throw new Error('Production must not use the preview storage namespace');
+          console.log('Production empty-data, access and storage namespace gates verified');
+          NODE
+          npm run build
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Install preview dependencies
+        working-directory: preview
+        run: npm ci
 
-      - name: Upload artifact
+      - name: Verify preview storage isolation
+        working-directory: preview
+        env:
+          VITE_STORAGE_NAMESPACE: eo-v47-preview
+        run: node scripts/verify-storage-isolation.mjs
+
+      - name: Build preview V4.7 with isolated storage
+        working-directory: preview
+        env:
+          VITE_STORAGE_NAMESPACE: eo-v47-preview
+        shell: bash
+        run: |
+          node <<'NODE'
+          if (process.env.VITE_PUBLIC_EMPTY_DATA !== 'true') throw new Error('Preview empty-data gate is required');
+          if (process.env.VITE_ENABLE_ACCESS_LOCK !== 'true' || !process.env.VITE_ACCESS_PASSWORD) throw new Error('Preview access gate is required');
+          if (process.env.VITE_STORAGE_NAMESPACE !== 'eo-v47-preview') throw new Error('Preview storage namespace gate is required');
+          console.log('Preview empty-data, access and isolated storage namespace gates verified');
+          NODE
+          npm run build
+
+      - name: Assemble both versions with production at the root
+        shell: bash
+        run: |
+          test -f production/dist/index.html
+          test -f preview/dist/index.html
+          if find production/dist preview/dist -type l -print -quit | grep -q .; then
+            echo 'Symbolic links are not allowed in either distribution directory.' >&2
+            exit 1
+          fi
+          mkdir -p pages
+          cp -a production/dist/. pages/
+          if [ -e pages/preview/v4.7 ]; then
+            echo 'Production already contains the reserved preview/v4.7 path; refusing to overwrite it.' >&2
+            exit 1
+          fi
+          mkdir -p pages/preview/v4.7
+          cp -a preview/dist/. pages/preview/v4.7/
+
+      - name: Verify deployment copies, relative resources and preview namespace
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          function filesUnder(directory) {
+            return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+              const file = path.join(directory, entry.name);
+              if (entry.isSymbolicLink()) throw new Error('Symbolic links are not allowed in the Pages artifact');
+              return entry.isDirectory() ? filesUnder(file) : [file];
+            });
+          }
+          function verifyCopy(source, target) {
+            for (const file of filesUnder(source)) {
+              const relative = path.relative(source, file);
+              const copied = path.join(target, relative);
+              if (!fs.existsSync(copied) || !fs.readFileSync(file).equals(fs.readFileSync(copied))) throw new Error(`Deployment copy mismatch: ${relative}`);
+            }
+          }
+          function verifyHtml(directory) {
+            const html = fs.readFileSync(path.join(directory, 'index.html'), 'utf8');
+            for (const match of html.matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
+              const reference = match[1];
+              if (reference.startsWith('#') || /^(?:https?:|data:|mailto:)/.test(reference)) continue;
+              if (reference.startsWith('/')) throw new Error(`Absolute asset path is not allowed in ${directory}`);
+              const file = path.resolve(directory, reference.split(/[?#]/)[0]);
+              const root = path.resolve(directory) + path.sep;
+              if (!file.startsWith(root) || !fs.existsSync(file)) throw new Error(`Missing relative resource in ${directory}`);
+            }
+          }
+          verifyCopy('production/dist', 'pages');
+          verifyCopy('preview/dist', 'pages/preview/v4.7');
+          verifyHtml('pages');
+          verifyHtml('pages/preview/v4.7');
+          const previewJs = filesUnder('preview/dist').filter(file => file.endsWith('.js')).map(file => fs.readFileSync(file, 'utf8')).join('\n');
+          const productionJs = filesUnder('production/dist').filter(file => file.endsWith('.js')).map(file => fs.readFileSync(file, 'utf8')).join('\n');
+          if (!previewJs.includes('eo-v47-preview')) throw new Error('Preview namespace is absent from the preview bundle');
+          if (productionJs.includes('eo-v47-preview')) throw new Error('Preview namespace leaked into production');
+          console.log('Verified root=main V4.5, preview/v4.7=preview branch V4.7, exact file copies including hidden files, relative asset paths and preview namespace');
+          NODE
+
+      - name: Upload the combined Pages artifact
+        # v3 archives dotfiles; v4 excludes them. Keep required dist dotfiles intact.
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: pages
 
   deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy production and preview together
         id: deployment
         uses: actions/deploy-pages@v4

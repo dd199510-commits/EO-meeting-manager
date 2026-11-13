@@ -1,3 +1,4 @@
+import { scopedLocalStorage, scopedSessionStorage, decodeStorageEventKey } from './lib/scopedStorage.js'
 import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { CalendarDays, CheckCircle2 } from 'lucide-react'
 import './App.css'
@@ -132,7 +133,7 @@ function normalizePlanningTask(task) {
 
 function readPlanningTasks() {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(PLANNING_TASKS_STORAGE_KEY) || '[]')
+    const parsed = JSON.parse(scopedLocalStorage.getItem(PLANNING_TASKS_STORAGE_KEY) || '[]')
     return Array.isArray(parsed) ? parsed.map(normalizePlanningTask) : []
   } catch {
     return []
@@ -145,7 +146,7 @@ function persistPlanningTasks(tasks) {
 
 function readReserveNoticeSchemeStatus() {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(RESERVE_NOTICE_SCHEME_STATUS_KEY) || '{}')
+    const parsed = JSON.parse(scopedLocalStorage.getItem(RESERVE_NOTICE_SCHEME_STATUS_KEY) || '{}')
     return parsed && typeof parsed === 'object' ? parsed : {}
   } catch {
     return {}
@@ -158,7 +159,7 @@ function normalizeReserveNoticeSchemeStatus(input) {
 
 function readReserveNoticeSchemeSettings() {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(RESERVE_NOTICE_SCHEME_SETTINGS_KEY) || '{}')
+    const parsed = JSON.parse(scopedLocalStorage.getItem(RESERVE_NOTICE_SCHEME_SETTINGS_KEY) || '{}')
     return normalizeNoticeSettingsStore(parsed)
   } catch {
     return {}
@@ -243,7 +244,7 @@ function App() {
   }, [])
   const initialPlanningTasks = useMemo(() => readPlanningTasks(), [])
   const initialTask = useMemo(() => {
-    try { const id=window.localStorage.getItem('meeting-manager:ui:current-task:v1'); return initialPlanningTasks.find(task=>task.id===id) || null }
+    try { const id=scopedLocalStorage.getItem('meeting-manager:ui:current-task:v1'); return initialPlanningTasks.find(task=>task.id===id) || null }
     catch { return null }
   }, [initialPlanningTasks])
   const [activeTab, setActiveTabState] = useState(readInitialTab)
@@ -352,7 +353,8 @@ function App() {
     const update = () => setPersistence(getPersistenceStatus())
     window.addEventListener(PERSISTENCE_EVENT, update)
     const onStorage = event => {
-      if (event.key && !event.key.includes(':ui:') && event.key.startsWith('meeting-manager:')) pauseForExternalChange()
+      const key = decodeStorageEventKey(event.key, event.storageArea)
+      if (key && !key.includes(':ui:') && /^meeting-manager(?::|-)/.test(key)) pauseForExternalChange()
     }
     window.addEventListener('storage', onStorage)
     return () => { window.removeEventListener(PERSISTENCE_EVENT, update); window.removeEventListener('storage', onStorage) }
@@ -360,7 +362,7 @@ function App() {
 
   useEffect(() => {
     if (!currentPlanningTaskId) return
-    try { window.localStorage.setItem('meeting-manager:ui:current-task:v1', currentPlanningTaskId) } catch { /* Business save status reports storage issues. */ }
+    try { scopedLocalStorage.setItem('meeting-manager:ui:current-task:v1', currentPlanningTaskId) } catch { /* Business save status reports storage issues. */ }
   }, [currentPlanningTaskId])
 
   useEffect(() => {
@@ -508,11 +510,11 @@ function App() {
   useEffect(() => {
     const key='meeting-manager:ui:scroll:' + activeTab + ':' + activePageTab
     let top=0
-    try { top=Number(window.sessionStorage.getItem(key)) || 0 } catch { /* Use top on first visit. */ }
+    try { top=Number(scopedSessionStorage.getItem(key)) || 0 } catch { /* Use top on first visit. */ }
     const frame=window.requestAnimationFrame(()=>window.scrollTo({top,left:0}))
     return () => {
       window.cancelAnimationFrame(frame)
-      try { window.sessionStorage.setItem(key,String(window.scrollY)) } catch { /* Scroll is optional UI state. */ }
+      try { scopedSessionStorage.setItem(key,String(window.scrollY)) } catch { /* Scroll is optional UI state. */ }
     }
   }, [activeTab,activePageTab])
 
@@ -953,7 +955,7 @@ function App() {
     ]
     commitStorageTransaction(entries)
     setCurrentPlanningTaskId('');setSelectedNoticeTaskId('current');setSelectedOutlookTaskId('current')
-    try { window.localStorage.removeItem('meeting-manager:ui:current-task:v1') } catch { /* No selected task after restore. */ }
+    try { scopedLocalStorage.removeItem('meeting-manager:ui:current-task:v1') } catch { /* No selected task after restore. */ }
     setMeetings(next.meetings);setScheduledMeetings(next.scheduled);setContacts(next.contacts)
     setNoticeTemplates(next.noticeTemplates);setDisabledNoticeTemplateKeys(next.disabledNoticeTemplateKeys)
     setLogs(next.logs);setAiState(next.aiState);setReviewState(next.reviewState);setPlanningTasks(next.planningTasks)
@@ -983,13 +985,13 @@ function App() {
         const next=normalizeSystemBackup(parsed)
         const backupDate=parsed.exportedAt?new Date(parsed.exportedAt).toLocaleString('zh-CN'):'旧版备份'
         const confirmed=await confirmDialog({title:'预览系统备份',
-          message:'备份时间 '+backupDate+'\n会议 '+meetings.length+' → '+next.meetings.length+' 条\n联系人 '+contacts.length+' → '+next.contacts.length+' 位\n排程任务 '+planningTasks.length+' → '+next.planningTasks.length+' 个\n将覆盖当前系统数据，恢复前会保留快照，可从侧栏撤销。',confirmLabel:'保留快照并恢复',danger:true})
+          message:'备份时间 '+backupDate+'\n会议 '+meetings.length+' → '+next.meetings.length+' 条\n联系人 '+contacts.length+' → '+next.contacts.length+' 位\n排程任务 '+planningTasks.length+' → '+next.planningTasks.length+' 个\n将覆盖当前测试版数据，恢复前会保留快照，可从右上角 EO 菜单撤销。',confirmLabel:'保留快照并恢复',danger:true})
         if(!confirmed)return
         if(!saveRecoveryPoint(buildSystemBackupPayload()))throw new Error('本地空间不足，未能保留恢复前快照。请先导出当前工作再释放空间。')
         applySystemBackup(next)
         setRecoveryPoint(readRecoveryPoint())
         appendLog('import','系统备份','恢复系统备份，共 '+next.meetings.length+' 条会议，恢复前快照可撤销')
-        toast('系统备份已恢复。可在侧栏选择“撤销上次恢复”。')
+        toast('测试版备份已恢复。可在右上角 EO 菜单选择“撤销上次恢复”。')
       }catch(error){toast('恢复未完成：'+error.message,'error')}
     }
     input.click()

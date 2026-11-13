@@ -1,4 +1,4 @@
-# 会议管理系统 V4.7（Meeting Manager）
+# 会议管理系统 V4.7 独立测试版（Meeting Manager）
 
 面向高频会议场景（如高管办公室 / 总裁办）的一体化会议运营桌面应用：维护会议主数据、生成月度排程清单、调用 AI 生成排程方案、在仿 Outlook 日历中人工审核调整，最后输出预留通知与 Outlook 批量会邀脚本，并内置会议时间数据分析。
 
@@ -8,7 +8,9 @@
 
 Windows 本地包使用说明、数据迁移和验证范围见 [本地版使用说明](./本地版使用说明.md)。
 
-网页版：[打开 GitHub Pages](https://dd199510-commits.github.io/EO-meeting-manager/)。登录后从右上角「EO」菜单导出或恢复备份，详细说明见 [网页版使用说明](./网页版使用说明.md)。
+正式版 V4.5：[原网址](https://dd199510-commits.github.io/EO-meeting-manager/)。
+
+独立测试版 V4.7：[测试网址](https://dd199510-commits.github.io/EO-meeting-manager/preview/v4.7/)。测试版使用独立的浏览器存储命名空间，默认不读取或修改正式版的数据。需要试用现有数据时，可手动导出备份后在测试版右上角「EO」菜单导入，详细说明见 [网页版使用说明](./网页版使用说明.md)。
 
 ## 功能模块
 

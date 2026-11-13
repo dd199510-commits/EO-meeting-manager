@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from './scopedStorage.js'
 const failures = new Map()
 const blocked = new Set()
 let lastSavedAt = ''
@@ -15,7 +16,7 @@ export function getPersistenceStatus() {
 export function inspectStoredJson(keys) {
   for (const key of keys) {
     try {
-      const raw = window.localStorage.getItem(key)
+      const raw = scopedLocalStorage.getItem(key)
       if (raw !== null) JSON.parse(raw)
     } catch {
       blocked.add(key)
@@ -34,7 +35,7 @@ export function persistJson(key, value) {
   if (externalChange) return false
   if (blocked.has(key)) { announce(); return false }
   try {
-    window.localStorage.setItem(key, JSON.stringify(value))
+    scopedLocalStorage.setItem(key, JSON.stringify(value))
     failures.delete(key)
     lastSavedAt = new Date().toISOString()
     announce()
@@ -54,22 +55,22 @@ export function pauseForExternalChange() {
 // A synchronous write group rolls back on failure before React state is replaced.
 export function commitStorageTransaction(entries) {
   if (externalChange) throw new Error('其他窗口修改了数据，请先导出当前工作并重新打开应用。')
-  const previous = new Map(entries.map(([key]) => [key, window.localStorage.getItem(key)]))
+  const previous = new Map(entries.map(([key]) => [key, scopedLocalStorage.getItem(key)]))
   try {
     for (const [key, value] of entries) {
-      if (value === null) window.localStorage.removeItem(key)
-      else window.localStorage.setItem(key, JSON.stringify(value))
+      if (value === null) scopedLocalStorage.removeItem(key)
+      else scopedLocalStorage.setItem(key, JSON.stringify(value))
     }
   } catch (error) {
     let rollbackFailed = false
     // Release the replacement values before restoring larger previous values.
     for (const [key] of previous) {
-      try { window.localStorage.removeItem(key) } catch { rollbackFailed = true }
+      try { scopedLocalStorage.removeItem(key) } catch { rollbackFailed = true }
     }
     for (const [key, value] of previous) {
       try {
-        if (value === null) window.localStorage.removeItem(key)
-        else window.localStorage.setItem(key, value)
+        if (value === null) scopedLocalStorage.removeItem(key)
+        else scopedLocalStorage.setItem(key, value)
       } catch { rollbackFailed = true }
     }
     throw new Error(rollbackFailed

@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from '../../lib/scopedStorage.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { confirmDialog, toast } from '../../components/Feedback'
 import {
@@ -46,7 +47,7 @@ const REVIEW_WORKSPACE_KEY = 'meeting-manager:ui:review-workspace:v1:'
 function readReviewWorkspace(taskId) {
   if (!taskId || typeof window === 'undefined') return {}
   try {
-    const saved = JSON.parse(window.localStorage.getItem(`${REVIEW_WORKSPACE_KEY}${taskId}`) || '{}')
+    const saved = JSON.parse(scopedLocalStorage.getItem(`${REVIEW_WORKSPACE_KEY}${taskId}`) || '{}')
     return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {}
   } catch {
     return {}
@@ -56,7 +57,7 @@ function readReviewWorkspace(taskId) {
 function saveReviewWorkspace(taskId, patch) {
   if (!taskId || typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(`${REVIEW_WORKSPACE_KEY}${taskId}`, JSON.stringify({ ...readReviewWorkspace(taskId), ...patch }))
+    scopedLocalStorage.setItem(`${REVIEW_WORKSPACE_KEY}${taskId}`, JSON.stringify({ ...readReviewWorkspace(taskId), ...patch }))
   } catch { /* Restoring a view is optional when local storage is unavailable. */ }
 }
 
@@ -373,7 +374,7 @@ export function ReviewBoard({
   const [displayTimeZone, setDisplayTimeZone] = useState(
     () => {
       if (typeof window === 'undefined') return DEFAULT_REVIEW_TIME_ZONE
-      const stored = window.localStorage.getItem(REVIEW_TIME_ZONE_STORAGE_KEY)
+      const stored = scopedLocalStorage.getItem(REVIEW_TIME_ZONE_STORAGE_KEY)
       return REVIEW_TIME_ZONE_OPTIONS.some((item) => item.value === stored)
         ? stored
         : DEFAULT_REVIEW_TIME_ZONE
@@ -407,7 +408,7 @@ export function ReviewBoard({
   const [pendingReviewFocusId, setPendingReviewFocusId] = useState(initialWorkspace.pendingReviewFocusId || '')
   const [pendingReviewLocateIndex, setPendingReviewLocateIndex] = useState(0)
   const [checklistCollapsed, setChecklistCollapsed] = useState(
-    () => typeof window !== 'undefined' && window.localStorage.getItem('meeting-manager:ui:review-checklist-collapsed:v1') === '1',
+    () => typeof window !== 'undefined' && scopedLocalStorage.getItem('meeting-manager:ui:review-checklist-collapsed:v1') === '1',
   )
   const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false)
   const [selectedChecklistDetailId, setSelectedChecklistDetailId] = useState('')
@@ -433,7 +434,7 @@ export function ReviewBoard({
   }, [checkFilterType, checkFocus, checkSearchText, monthAnchor, pendingReviewFocusId, selectedCheckMeetingId, selectedDay?.date, selectedMeeting?.id, taskId, viewType, weekAnchor])
 
   useEffect(() => {
-    window.localStorage.setItem(REVIEW_TIME_ZONE_STORAGE_KEY, displayTimeZone)
+    scopedLocalStorage.setItem(REVIEW_TIME_ZONE_STORAGE_KEY, displayTimeZone)
     if (previousTimeZoneRef.current === displayTimeZone) return
     previousTimeZoneRef.current = displayTimeZone
     setDetailEdits({})
@@ -441,7 +442,7 @@ export function ReviewBoard({
   }, [displayTimeZone])
 
   useEffect(() => {
-    window.localStorage.setItem('meeting-manager:ui:review-checklist-collapsed:v1', checklistCollapsed ? '1' : '0')
+    scopedLocalStorage.setItem('meeting-manager:ui:review-checklist-collapsed:v1', checklistCollapsed ? '1' : '0')
   }, [checklistCollapsed])
 
   useEffect(() => {

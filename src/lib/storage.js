@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from './scopedStorage.js'
 import { INITIAL_CONTACTS, INITIAL_MEETINGS, INITIAL_SCHEDULED, normalizeMeeting, STORAGE_KEY } from '../data/meetingData'
 import { normalizeContact, resolveAttendeeRefs } from './contacts'
 import { normalizeNoticeTemplates } from '../features/reserveNotice/notificationTemplates'
@@ -16,7 +17,7 @@ function createEmptyStorage() {
 
 export function readStorage() {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = scopedLocalStorage.getItem(STORAGE_KEY)
     if (!raw) {
       if (IS_PUBLIC_EMPTY_BUILD) return createEmptyStorage()
 

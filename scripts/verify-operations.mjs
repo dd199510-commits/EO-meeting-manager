@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { updateSchedulePreservingNotices, scheduleSignature } from '../src/lib/workflow.js'
 import { commitStorageTransaction, persistJson, blockStorageKey } from '../src/lib/persistence.js'
 import { buildNoticeSnapshot, createNoticeSentRecord, getNoticeDeliveryState } from '../src/lib/noticeRevision.js'
+import { STORAGE_PREFIX, scopedLocalStorage } from '../src/lib/scopedStorage.js'
 
-const values = new Map([['a', 'a'.repeat(92)], ['b', 'b'.repeat(12)]])
+const values = new Map([[STORAGE_PREFIX + 'a', 'a'.repeat(92)], [STORAGE_PREFIX + 'b', 'b'.repeat(12)]])
 const storage = {
   getItem: key => values.get(key) ?? null,
   removeItem: key => values.delete(key),
@@ -15,14 +16,14 @@ const storage = {
 }
 globalThis.window = { localStorage: storage, dispatchEvent() {} }
 assert.throws(() => commitStorageTransaction([['a', 'a'.repeat(10)], ['b', 'b'.repeat(90)], ['c', 'extra']]))
-assert.equal(storage.getItem('a'), 'a'.repeat(92))
-assert.equal(storage.getItem('b'), 'b'.repeat(12))
-assert.equal(storage.getItem('c'), null)
+assert.equal(scopedLocalStorage.getItem('a'), 'a'.repeat(92))
+assert.equal(scopedLocalStorage.getItem('b'), 'b'.repeat(12))
+assert.equal(scopedLocalStorage.getItem('c'), null)
 values.clear()
-storage.setItem('broken', '{invalid')
+scopedLocalStorage.setItem('broken', '{invalid')
 blockStorageKey('broken')
 assert.equal(persistJson('broken', { empty: true }), false)
-assert.equal(storage.getItem('broken'), '{invalid')
+assert.equal(scopedLocalStorage.getItem('broken'), '{invalid')
 commitStorageTransaction([['broken', { repaired: true }]])
 assert.equal(persistJson('broken', { working: true }), true)
 

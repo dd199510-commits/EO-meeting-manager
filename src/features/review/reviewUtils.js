@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from '../../lib/scopedStorage.js'
 export const DEFAULT_REVIEW_STATE = {
   scheduledMeetings: [],
   source: '',
@@ -17,7 +18,7 @@ function replaceTaskIdsWithMeetingNames(text, taskNameMap) {
 
 export function readReviewState(storageKey) {
   try {
-    const raw = window.localStorage.getItem(storageKey)
+    const raw = scopedLocalStorage.getItem(storageKey)
     return raw ? normalizeReviewState(JSON.parse(raw)) : DEFAULT_REVIEW_STATE
   } catch {
     return DEFAULT_REVIEW_STATE
@@ -25,7 +26,7 @@ export function readReviewState(storageKey) {
 }
 
 export function persistReviewState(storageKey, data) {
-  window.localStorage.setItem(storageKey, JSON.stringify(data))
+  scopedLocalStorage.setItem(storageKey, JSON.stringify(data))
 }
 
 export function normalizeReviewState(input) {

@@ -1,3 +1,4 @@
+import { scopedLocalStorage } from '../../lib/scopedStorage.js'
 import { createElement, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BarChart3,
@@ -3808,7 +3809,7 @@ function readStoredSavedViews() {
 
 function readJson(key, fallback) {
   try {
-    const raw = window.localStorage.getItem(key)
+    const raw = scopedLocalStorage.getItem(key)
     return raw ? JSON.parse(raw) : fallback
   } catch {
     blockStorageKey(key)
