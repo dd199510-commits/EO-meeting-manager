@@ -1,5 +1,9 @@
 # 会议管理系统 V4.5（Meeting Manager）
 
+正式版地址：https://dd199510-commits.github.io/EO-meeting-manager/
+
+V4.7 独立测试版：https://dd199510-commits.github.io/EO-meeting-manager/preview/v4.7/ 。测试源码位于 `preview/v4.7` 分支，使用独立浏览器数据区，不会自动读取或修改正式版数据。正式版仍从 `main` 的 V4.5 源码构建；更新测试版后，从 `main` 手动运行 Pages 发布流程即可。发布流程会检查两版的版本号和测试数据隔离，测试构建仅放在 `preview/v4.7/` 目录。
+
 面向高频会议场景（如高管办公室 / 总裁办）的一体化会议运营桌面应用：维护会议主数据、生成月度排程清单、调用 AI 生成排程方案、在仿 Outlook 日历中人工审核调整，最后输出预留通知与 Outlook 批量会邀脚本，并内置会议时间数据分析。
 
 基于 `React 19 + Vite 7 + Electron 37` 构建，数据全部保存在本地（localStorage + 本地 JSON 备份），不依赖任何后端服务。
