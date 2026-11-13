@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
-import { CheckCircle2, Copy, FilePlus2, PencilLine, Search, Trash2, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Copy, FilePlus2, PencilLine, Search, Trash2, X } from 'lucide-react'
 import { FREQUENCY_LABELS } from '../../data/meetingData'
 import { toast } from '../../components/Feedback'
 import { WorkflowBlocker } from '../../components/WorkflowBlocker'
 import { splitAttendees } from '../../lib/contacts'
+import { buildNoticeSnapshot, getNoticeDeliveryState } from '../../lib/noticeRevision'
 import {
   BUILT_IN_NOTICE_TEMPLATES,
   getMergedNoticeTemplates,
@@ -157,6 +158,8 @@ export function ReserveNoticeBoard({
   onUpdateAdhocNoticeSettings,
   onSaveTemplates,
   onGoToPlanner,
+  onBackToReview,
+  onContinueToInvite,
 }) {
   const [selectedId, setSelectedId] = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -164,12 +167,14 @@ export function ReserveNoticeBoard({
   const [showTemplateManager, setShowTemplateManager] = useState(false)
   const [draftNoticeSettings, setDraftNoticeSettings] = useState(null)
   const [selectedSchemeId, setSelectedSchemeId] = useState('')
+  const [previewCandidates, setPreviewCandidates] = useState(false)
+  const availableSchemes = useMemo(() => schemeOptions.filter((scheme) => previewCandidates || scheme.confirmed === true), [previewCandidates, schemeOptions])
   const selectedTask =
     noticeTaskOptions.find((task) => task.id === selectedTaskId) ?? noticeTaskOptions[0] ?? null
-  const activeSchemeId = schemeOptions.some((scheme) => scheme.id === selectedSchemeId)
+  const activeSchemeId = availableSchemes.some((scheme) => scheme.id === selectedSchemeId)
     ? selectedSchemeId
-    : schemeOptions[0]?.id ?? ''
-  const selectedScheme = schemeOptions.find((scheme) => scheme.id === activeSchemeId) ?? null
+    : availableSchemes[0]?.id ?? ''
+  const selectedScheme = availableSchemes.find((scheme) => scheme.id === activeSchemeId) ?? null
   const scheduledMeetings = useMemo(
     () => selectedScheme?.scheduledMeetings ?? [],
     [selectedScheme],
@@ -218,7 +223,6 @@ export function ReserveNoticeBoard({
             noticeSettings: settings,
             isIndependent,
             scheduledMeeting,
-            sent: Boolean(reserveNoticeStatus[groupId]),
             template: mergedTemplates[templateKey] ?? BUILT_IN_NOTICE_TEMPLATES.general,
             occurrences: [],
           })
@@ -227,12 +231,12 @@ export function ReserveNoticeBoard({
         grouped.get(groupId).occurrences.push(scheduledMeeting)
       })
 
-    return Array.from(grouped.values()).map((row) => ({
-      ...row,
-      tokens: extractTemplateTokens(row.template.content),
-      context: buildNoticeContext(row.template, row.contextMeeting, row.scheduledMeeting, row.occurrences),
-      text: buildNoticeText(row.template, row.contextMeeting, row.scheduledMeeting, row.occurrences),
-    }))
+    return Array.from(grouped.values()).map((row) => {
+      const text = buildNoticeText(row.template, row.contextMeeting, row.scheduledMeeting, row.occurrences)
+      const snapshot = buildNoticeSnapshot({ rowId: row.id, subject: row.scheduledMeeting.name, occurrences: row.occurrences, text, templateKey: row.template.key })
+      const delivery = getNoticeDeliveryState(reserveNoticeStatus[row.id], snapshot)
+      return { ...row, text, snapshot, delivery, sent: delivery.sent && !delivery.stale, tokens: extractTemplateTokens(row.template.content), context: buildNoticeContext(row.template, row.contextMeeting, row.scheduledMeeting, row.occurrences) }
+    })
   }, [meetingMap, mergedTemplates, reserveNoticeSettings, reserveNoticeStatus, scheduledMeetings])
 
   const filteredRows = useMemo(() => {
@@ -245,6 +249,7 @@ export function ReserveNoticeBoard({
       }
 
       if (filterType === 'unsent') return !row.sent
+      if (filterType === 'stale') return row.delivery.stale
       if (filterType === 'sent') return row.sent
       return true
     })
@@ -347,6 +352,16 @@ export function ReserveNoticeBoard({
     onUpdateAdhocNoticeSettings?.(selectedRow.id, normalizedSettings, selectedScheme)
   }
 
+  function toggleSent(row) {
+    if (!selectedScheme?.confirmed) { toast('候选方案仅供预览，请先确认正式排程', 'warning'); return }
+    if (row.id === selectedRow?.id && selectedPreviewText !== row.text) {
+      toast('请先保存通知设置，再确认发送，确保发送记录与已保存文案一致', 'warning')
+      return
+    }
+    const sent = !row.sent || row.delivery.status === 'legacy'
+    onToggleSent?.(row.id, selectedScheme, row.snapshot, { sent })
+  }
+
   if (noticeTaskOptions.length === 0 || schemeOptions.length === 0) {
     const hasTask = noticeTaskOptions.length > 0
     return (
@@ -367,271 +382,51 @@ export function ReserveNoticeBoard({
   }
 
   return (
-    <section className="panel reserve-notice-shell">
-      <div className="reserve-notice-topbar">
-        <div className="reserve-task-selector">
-          <div>
-            <span>通知任务来源</span>
-            <strong>{selectedTask?.name ?? '请选择已排程任务'}</strong>
-          </div>
-          <select
-            value={selectedTask?.id ?? ''}
-            onChange={(event) => handleTaskChange(event.target.value)}
-            disabled={noticeTaskOptions.length === 0}
-          >
-            {(noticeTaskOptions.length > 0 ? noticeTaskOptions : [{ id: 'empty', name: '暂无已排程任务' }]).map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="reserve-task-selector reserve-scheme-selector">
-          <div>
-            <span>排程方案</span>
-            <strong>{selectedScheme?.label ?? '请选择排程方案'}</strong>
-          </div>
-          <select
-            value={activeSchemeId}
-            onChange={(event) => handleSchemeChange(event.target.value)}
-            disabled={schemeOptions.length === 0}
-          >
-            {(schemeOptions.length > 0 ? schemeOptions : [{ id: 'empty', label: '暂无排程方案' }]).map((scheme) => (
-              <option key={scheme.id} value={scheme.id}>
-                {scheme.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="reserve-notice-progress">
-          <CheckCircle2 size={15} />
-          <strong>{sentCount}</strong>
-          <span>/</span>
-          <span>{rows.length} 条已发送</span>
-        </div>
-        <div className="reserve-notice-summary-cards">
-          <div className="reserve-notice-summary-card">
-            <span>待发送</span>
-            <strong>{unsentCount}</strong>
-          </div>
-          <div className="reserve-notice-summary-card">
-            <span>已发送</span>
-            <strong>{sentCount}</strong>
-          </div>
-          <div className="reserve-notice-summary-card">
-            <span>排程状态</span>
-            <strong>{selectedTask?.status ?? '待选择'}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="reserve-notice-layout">
-        <div className="reserve-notice-list-panel">
-          <div className="rn-panel-kicker">
-            <strong>会议选择</strong>
-            <span>{filteredRows.length} / {rows.length} 条通知</span>
-          </div>
-          <div className="reserve-notice-toolbar">
-            <label className="final-check-search">
-              <Search size={15} />
-              <input
-                type="text"
-                placeholder="搜索会议名称或通知内容"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-              />
-            </label>
-            <div className="final-check-filters">
-              <button
-                type="button"
-                className={filterType === 'all' ? 'final-check-filter final-check-filter-active' : 'final-check-filter'}
-                onClick={() => setFilterType('all')}
-              >
-                全部
-              </button>
-              <button
-                type="button"
-                className={filterType === 'unsent' ? 'final-check-filter final-check-filter-active' : 'final-check-filter'}
-                onClick={() => setFilterType('unsent')}
-              >
-                未发送
-              </button>
-              <button
-                type="button"
-                className={filterType === 'sent' ? 'final-check-filter final-check-filter-active' : 'final-check-filter'}
-                onClick={() => setFilterType('sent')}
-              >
-                已发送
-              </button>
+    <section className="dd-dispatch-shell dd-notice-shell">
+      <div className="dd-dispatch-toolbar">
+        <div className="dd-section-title"><h2>通知清单</h2><span>已确认发送 {sentCount} / {rows.length}<span className="dd-dot-separator">·</span>待发送 {unsentCount}</span></div>
+        <div className="dd-toolbar-actions">
+          <button type="button" className="dd-text-button" onClick={() => (onBackToReview || onGoToPlanner)?.(selectedTask?.id)}>返回审核</button>
+          <details className="dd-context-menu">
+            <summary>任务与方案 <ChevronDown size={14} /></summary>
+            <div className="dd-menu-content">
+              <label className="dd-menu-field"><span>切换任务</span><select value={selectedTask?.id ?? ''} onChange={(event) => handleTaskChange(event.target.value)} disabled={!noticeTaskOptions.length}>{noticeTaskOptions.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}</select></label>
+              <label className="dd-menu-field"><span>排程方案</span><select value={activeSchemeId} onChange={(event) => handleSchemeChange(event.target.value)} disabled={!availableSchemes.length}>{!availableSchemes.length ? <option value="">暂无已确认方案</option> : null}{availableSchemes.map((scheme) => <option key={scheme.id} value={scheme.id}>{scheme.confirmed ? '已确认 · ' : '候选预览 · '}{scheme.label}</option>)}</select></label>
+              <label className="dd-menu-checkbox"><input type="checkbox" checked={previewCandidates} onChange={(event) => setPreviewCandidates(event.target.checked)} />显示候选方案，仅供预览</label>
+              <div className="dd-menu-divider" /><button type="button" className="dd-text-button" onClick={() => setShowTemplateManager(true)}><PencilLine size={14} />管理通知模板</button>
             </div>
-          </div>
-
-          <div className="reserve-notice-list">
-            {filteredRows.map((row) => (
-              <article
-                key={row.id}
-                className={
-                  row.id === selectedRow?.id
-                    ? 'reserve-notice-item reserve-notice-item-active'
-                    : 'reserve-notice-item'
-                }
-                onClick={() => setSelectedId(row.id)}
-              >
-                <div className="reserve-notice-item-head">
-                  <div className="reserve-notice-item-title">
-                    <strong>{row.scheduledMeeting.name}</strong>
-                    <span className={`final-check-frequency-mark final-check-frequency-mark-${row.scheduledMeeting.frequency === 'weekly' ? 'blue' : row.scheduledMeeting.frequency === 'monthly' ? 'green' : row.scheduledMeeting.frequency === 'yearly' ? 'orange' : 'gray'}`}>
-                      {FREQUENCY_LABELS[row.scheduledMeeting.frequency] ?? '不定期'}
-                    </span>
-                  </div>
-                  <div className="reserve-notice-item-side" onClick={(event) => event.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="icon-button rn-copy-button"
-                      onClick={() => copyText(row.id === selectedRow?.id ? selectedPreviewText || row.text : row.text, `「${row.scheduledMeeting.name}」通知`)}
-                      aria-label={`复制 ${row.scheduledMeeting.name} 的通知文案`}
-                      title="一键复制通知文案"
-                    >
-                      <Copy size={14} />
-                    </button>
-                    <label className="final-check-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={row.sent}
-                        onChange={() => onToggleSent(row.id, selectedScheme)}
-                      />
-                      <span>{row.sent ? '已发送' : '未发送'}</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="reserve-notice-item-meta">
-                  <span>{row.sent ? '已发送' : '待发送'}</span>
-                  <span>本阶段 {row.occurrences.length} 次</span>
-                  <span>{buildOccurrenceRangeLabel(row.occurrences)}</span>
-                  <span>{row.template.label}</span>
-                </div>
-
-                <div className="reserve-notice-item-detail">
-                  <div className="reserve-notice-item-detail-block">
-                    <span className="final-check-item-label">参会人</span>
-                    <p>{summarizeText(row.meeting?.attendees || row.scheduledMeeting.attendees, '未填写参会人')}</p>
-                  </div>
-                  <div className="reserve-notice-item-detail-block">
-                    <span className="final-check-item-label">通知重点</span>
-                    <p>{summarizeText(row.meeting?.notes || row.scheduledMeeting.notes, '无备注重点')}</p>
-                  </div>
-                  <div className="reserve-notice-item-detail-block reserve-notice-item-detail-block-wide">
-                    <span className="final-check-item-label">通知预览</span>
-                    <p>{row.id === selectedRow?.id ? selectedPreviewText || row.text : row.text}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <div className="reserve-notice-preview-panel">
-          <div className="rn-panel-kicker rn-panel-kicker-accent">
-            <strong>通知生成与模板配置</strong>
-            <span>{selectedRow ? '左侧选择会议后在此复制文案' : '请先在左侧选择会议'}</span>
-          </div>
-          {selectedRow ? (
-            <>
-              <div className="reserve-notice-preview-head">
-                <div>
-                  <h3>{selectedRow.scheduledMeeting.name}</h3>
-                  <p>
-                    {selectedRow.occurrences.length} 次安排 · {selectedOccurrenceRange}
-                  </p>
-                </div>
-                <div className="reserve-notice-preview-actions">
-                  <button className="ghost-button" onClick={() => setShowTemplateManager(true)}>
-                    <PencilLine size={16} />
-                    管理模板
-                  </button>
-                  <button className="ghost-button" onClick={() => onToggleSent(selectedRow.id, selectedScheme)}>
-                    <CheckCircle2 size={16} />
-                    {selectedRow.sent ? '取消已发送' : '标记已发送'}
-                  </button>
-                  <button className="primary-button" onClick={() => copyText(selectedPreviewText || selectedRow.text)}>
-                    <Copy size={16} />
-                    复制通知文案
-                  </button>
-                </div>
-              </div>
-
-              <div className="reserve-notice-preview-meta">
-                <span>{selectedPreviewTemplate?.label ?? selectedRow.template.label}</span>
-                <span>{FREQUENCY_LABELS[selectedRow.scheduledMeeting.frequency] ?? '不定期'}</span>
-                <span>{selectedRow.scheduledMeeting.duration} 分钟</span>
-                <span>{selectedRow.occurrences.length} 个安排时间</span>
-              </div>
-
-              <div className="reserve-notice-preview-main">
-                <div className="reserve-notice-preview-center">
-                  <div className="reserve-notice-preview-body">
-                    <pre>{selectedPreviewText || selectedRow.text}</pre>
-                  </div>
-
-                  <div className="reserve-notice-arrangement-card">
-                    <div className="reserve-notice-arrangement-head">
-                      <strong>本次通知覆盖的安排</strong>
-                      <span>{selectedRow.occurrences.length} 条</span>
-                    </div>
-                    <div className="reserve-notice-arrangement-list">
-                      {selectedRow.occurrences.map((item) => (
-                        <div key={item.id} className="reserve-notice-arrangement-item">
-                          <strong>{formatDisplayDate(item.date)}</strong>
-                          <span>{formatDisplayTime(item.startTime, item.endTime)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="reserve-notice-preview-side">
-                  <ReserveNoticeSettings
-                    key={`${selectedScheme?.id ?? 'scheme'}:${selectedRow.id}`}
-                    schemeId={selectedScheme?.id ?? ''}
-                    rowId={selectedRow.id}
-                    settings={selectedRow.noticeSettings}
-                    isIndependent={selectedRow.isIndependent}
-                    templateOptions={templateOptions}
-                    onSave={saveSelectedNoticeSettings}
-                    onOpenTemplateManager={() => setShowTemplateManager(true)}
-                    onDraftChange={setDraftNoticeSettings}
-                  />
-
-                  <ReserveNoticeTemplateSource selectedTemplate={selectedPreviewTemplate} />
-
-                  <ReserveNoticeVariableMapping
-                    templateTokens={selectedPreviewTokens}
-                    templateContext={selectedPreviewContext}
-                  />
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="empty-state">暂无通知</div>
-          )}
+          </details>
+          <button type="button" className="dd-primary-button" disabled={!selectedScheme?.confirmed} onClick={() => onContinueToInvite?.(selectedTask?.id)}>继续生成会邀</button>
         </div>
       </div>
-
-      {showTemplateManager ? (
-        <TemplateManagerModal
-          templates={noticeTemplates}
-          disabledBuiltInKeys={disabledNoticeTemplateKeys}
-          onClose={() => setShowTemplateManager(false)}
-          onSave={({ templates, disabledBuiltInKeys }) => {
-            onSaveTemplates?.({
-              templates: normalizeNoticeTemplates(templates),
-              disabledBuiltInKeys,
-            })
-            setShowTemplateManager(false)
-          }}
-        />
-      ) : null}
+      {!selectedScheme?.confirmed ? <div className="dd-dispatch-warning"><span>{selectedScheme ? '候选方案仅供预览，确认排程后可记录正式发送状态。' : '当前任务尚无已确认排程。'}</span><button type="button" onClick={() => (onBackToReview || onGoToPlanner)?.(selectedTask?.id)}>去确认排程</button></div> : null}
+      <div className="dd-dispatch-grid">
+        <div className="dd-list-pane">
+          <div className="dd-list-filters">
+            <div className="dd-segmented" role="group" aria-label="通知发送状态筛选">{[['all', '全部'], ['unsent', '待发送'], ['sent', '已发送'], ['stale', '待重发']].map(([value, label]) => <button type="button" key={value} className={filterType === value ? 'is-active' : ''} onClick={() => setFilterType(value)}>{label}{value === 'stale' && rows.some((row) => row.delivery.stale) ? <span className="dd-filter-count">{rows.filter((row) => row.delivery.stale).length}</span> : null}</button>)}</div>
+            <label className="dd-inline-search"><Search size={15} /><input type="search" value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="搜索会议或通知内容" aria-label="搜索通知" /></label>
+          </div>
+          <div className="dd-dispatch-list">
+            {filteredRows.map((row) => <article key={row.id} className={`dd-dispatch-row dd-notice-row ${row.id === selectedRow?.id ? 'is-active' : ''}`}>
+              <button type="button" className="dd-row-main" onClick={() => setSelectedId(row.id)} aria-pressed={row.id === selectedRow?.id}><strong>{row.scheduledMeeting.name}</strong><span>{buildOccurrenceRangeLabel(row.occurrences)}</span><small>{FREQUENCY_LABELS[row.scheduledMeeting.frequency] ?? '不定期'}<span className="dd-dot-separator">·</span>本阶段 {row.occurrences.length} 次</small></button>
+              <div className="dd-notice-row-side"><button type="button" className="dd-icon-button" onClick={() => copyText(row.id === selectedRow?.id ? selectedPreviewText || row.text : row.text, `「${row.scheduledMeeting.name}」通知`)} aria-label={`复制 ${row.scheduledMeeting.name} 的通知`} title="复制通知"><Copy size={15} /></button><label className="dd-notice-check"><input type="checkbox" checked={row.sent} disabled={!selectedScheme?.confirmed} onChange={() => toggleSent(row)} aria-label={`${row.scheduledMeeting.name} 的发送确认`} /><span className={row.delivery.stale || row.delivery.status === 'legacy' ? 'dd-status-warning' : row.sent ? 'dd-status-ready' : ''}>{row.delivery.stale ? '待重发' : row.delivery.status === 'legacy' ? '需复核' : row.sent ? '已发送' : '待发送'}</span></label></div>
+            </article>)}
+            {!filteredRows.length ? <div className="dd-empty-state">当前筛选下暂无通知</div> : null}
+          </div>
+          <div className="dd-list-footer">显示 {filteredRows.length} / {rows.length} 条通知</div>
+        </div>
+        <aside className="dd-preview-pane dd-notice-preview" aria-label="正式通知内容预览">
+          {selectedRow ? <>
+            <div className="dd-preview-heading"><span className="dd-preview-eyebrow">{selectedScheme?.confirmed ? '正式通知预览' : '候选通知预览'}</span><h3>{selectedRow.scheduledMeeting.name}</h3><span className="dd-preview-date">{selectedOccurrenceRange}<span className="dd-dot-separator">·</span>{selectedRow.occurrences.length} 次安排</span><div className="dd-preview-actions"><button type="button" className="dd-primary-button" onClick={() => copyText(selectedPreviewText || selectedRow.text)}><Copy size={15} />复制通知</button><button type="button" className="dd-secondary-button" disabled={!selectedScheme?.confirmed} onClick={() => toggleSent(selectedRow)}><CheckCircle2 size={15} />{selectedRow.delivery.stale ? '确认已重新发送' : selectedRow.delivery.status === 'legacy' ? '复核并确认发送' : selectedRow.sent ? '取消发送标记' : '确认已发送'}</button></div></div>
+            {selectedRow.delivery.stale ? <div className="dd-notice-revision"><strong>内容已变化，请重新通知</strong>{selectedRow.delivery.changes.map((change) => <details key={change.field}><summary>{change.label}已更新</summary><div><del>{change.before || '无'}</del><ins>{change.after || '无'}</ins></div></details>)}{selectedRow.delivery.sentAt ? <small>上次确认 {new Date(selectedRow.delivery.sentAt).toLocaleString()}</small> : null}</div> : null}
+            {selectedRow.delivery.status === 'legacy' ? <div className="dd-inline-note">旧记录没有保存发送时正文，请复核后确认。</div> : null}
+            <div className="dd-notice-paper"><pre>{selectedPreviewText || selectedRow.text}</pre></div>
+            <details className="dd-content-details"><summary>本次通知覆盖 {selectedRow.occurrences.length} 个安排 <ChevronDown size={14} /></summary><div className="dd-occurrence-list">{selectedRow.occurrences.map((item) => <div key={item.id}><strong>{formatDisplayDate(item.date)}</strong><span>{formatDisplayTime(item.startTime, item.endTime)}</span></div>)}</div></details>
+            <details className="dd-content-details"><summary>通知设置与模板 <ChevronDown size={14} /></summary><div className="dd-template-settings"><ReserveNoticeSettings key={`${selectedScheme?.id ?? 'scheme'}:${selectedRow.id}`} schemeId={selectedScheme?.id ?? ''} rowId={selectedRow.id} settings={selectedRow.noticeSettings} isIndependent={selectedRow.isIndependent} templateOptions={templateOptions} onSave={saveSelectedNoticeSettings} onOpenTemplateManager={() => setShowTemplateManager(true)} onDraftChange={setDraftNoticeSettings} /><ReserveNoticeTemplateSource selectedTemplate={selectedPreviewTemplate} /><ReserveNoticeVariableMapping templateTokens={selectedPreviewTokens} templateContext={selectedPreviewContext} /></div></details>
+          </> : <div className="dd-empty-state"><Copy size={28} /><span>选择会议，预览并复制通知</span></div>}
+        </aside>
+      </div>
+      {showTemplateManager ? <TemplateManagerModal templates={noticeTemplates} disabledBuiltInKeys={disabledNoticeTemplateKeys} onClose={() => setShowTemplateManager(false)} onSave={({ templates, disabledBuiltInKeys }) => { onSaveTemplates?.({ templates: normalizeNoticeTemplates(templates), disabledBuiltInKeys }); setShowTemplateManager(false) }} /> : null}
     </section>
   )
 }

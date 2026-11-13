@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Mail, Plus, Search, Trash2, UserRound, X } from 'lucide-react'
 import { parseSecretaries } from '../../lib/contacts'
+import { isValidEmail } from '../../lib/email'
+import { confirmDialog } from '../../components/Feedback'
 
 function createEmptyContact(name = '') {
   return {
@@ -16,9 +18,18 @@ function createEmptyContact(name = '') {
   }
 }
 
-export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
+function contactSignature(contact) {
+  return JSON.stringify({
+    ...contact,
+    aliases: Array.isArray(contact.aliases) ? contact.aliases : String(contact.aliases || '').split(/[\n,，、；;]/).map((value) => value.trim()).filter(Boolean),
+    secretaries: parseSecretaries(contact.secretaries).map(({ name, email }) => ({ name, email })),
+  })
+}
+
+export function ContactsView({ contacts, onSaveContact, onDeleteContact, onReturnToWorkflow, onDirtyChange }) {
   const [search, setSearch] = useState('')
   const [editingContact, setEditingContact] = useState(null)
+  const [baseline, setBaseline] = useState(() => contactSignature(createEmptyContact()))
   const filteredContacts = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     if (!keyword) return contacts
@@ -38,7 +49,29 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
   }, [contacts, search])
 
   const formData = editingContact ?? createEmptyContact()
+  const dirty = editingContact !== null && contactSignature(formData) !== baseline
+  const invalidEmail = Boolean(formData.email.trim() && !isValidEmail(formData.email))
+  const invalidSecretaryEmail = parseSecretaries(formData.secretaries).some((secretary) => secretary.email && !isValidEmail(secretary.email))
   const linkedCount = contacts.filter((contact) => contact.email).length
+
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
+  useEffect(() => {
+    if (!dirty) return undefined
+    const preventLoss = (event) => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', preventLoss)
+    return () => window.removeEventListener('beforeunload', preventLoss)
+  }, [dirty])
+
+  async function mayDiscard() {
+    return !dirty || await confirmDialog({ title: '保留联系人修改？', message: '当前修改尚未保存。离开后这些修改会丢失。', confirmLabel: '放弃修改', danger: true })
+  }
+
+  async function selectContact(contact) {
+    if (!await mayDiscard()) return
+    const next = structuredClone(contact)
+    setEditingContact(next)
+    setBaseline(contactSignature(next))
+  }
 
   function updateForm(patch) {
     setEditingContact((current) => ({
@@ -77,7 +110,7 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
     })
   }
 
-  function saveForm() {
+  async function saveForm(returnAfterSave = false) {
     const nextContact = {
       ...formData,
       aliases: Array.isArray(formData.aliases)
@@ -89,9 +122,12 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
       secretaries: parseSecretaries(formData.secretaries),
     }
 
-    if (!nextContact.name.trim()) return
-    onSaveContact(nextContact)
+    if (!nextContact.name.trim() || invalidEmail || invalidSecretaryEmail) return
+    if (await onSaveContact(nextContact) === false) return
     setEditingContact(null)
+    setBaseline(contactSignature(createEmptyContact()))
+    onDirtyChange?.(false)
+    if (returnAfterSave) onReturnToWorkflow?.()
   }
 
   return (
@@ -102,7 +138,7 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
             <strong>通讯录</strong>
             <span>{linkedCount} / {contacts.length} 已填写邮箱</span>
           </div>
-          <button className="nx-btn nx-btn-primary" type="button" onClick={() => setEditingContact(createEmptyContact())}>
+          <button className="nx-btn nx-btn-primary" type="button" onClick={() => selectContact(createEmptyContact())}>
             <Plus />
             新建联系人
           </button>
@@ -126,7 +162,7 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
               className={
                 editingContact?.id === contact.id ? 'cv-row cv-row-active' : 'cv-row'
               }
-              onClick={() => setEditingContact(contact)}
+              onClick={() => selectContact(contact)}
             >
               <span className="cv-avatar" aria-hidden="true"><UserRound size={15} /></span>
               <span className="cv-row-main">
@@ -153,7 +189,7 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
                   className="nx-btn nx-btn-outline"
                   type="button"
                   onClick={() => {
-                    setEditingContact(createEmptyContact(search.trim()))
+                    selectContact(createEmptyContact(search.trim()))
                     setSearch('')
                   }}
                 >
@@ -170,6 +206,8 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
         <div className="cv-editor-head">
           <strong>{formData.id ? '编辑联系人' : '新建联系人'}</strong>
           <span>用于会议参会人自动匹配与后续会邀发送。</span>
+          {dirty ? <span className="nx-badge nx-badge-warn">有未保存修改</span> : null}
+          {onReturnToWorkflow ? <button className="nx-btn nx-btn-quiet" type="button" onClick={async () => { if (await mayDiscard()) onReturnToWorkflow() }}>返回刚才的工作</button> : null}
         </div>
         <div className="cv-editor-form">
           <label className="nx-field">
@@ -186,9 +224,12 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
             <input
               className="nx-input"
               value={formData.email}
+              type="email"
+              aria-invalid={invalidEmail}
               onChange={(event) => updateForm({ email: event.target.value })}
               placeholder="name@example.com"
             />
+            {invalidEmail ? <small className="error-text" role="alert">请输入单个有效邮箱，例如 name@example.com</small> : null}
           </label>
           <label className="nx-field">
             <span>别名</span>
@@ -213,6 +254,8 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
                   <input
                     className="nx-input"
                     value={secretary.email}
+                    type="email"
+                    aria-invalid={Boolean(secretary.email && !isValidEmail(secretary.email))}
                     onChange={(event) => updateSecretary(index, { email: event.target.value })}
                     placeholder="秘书邮箱"
                   />
@@ -230,6 +273,7 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
                 <Plus size={14} />
                 添加秘书
               </button>
+              {invalidSecretaryEmail ? <small className="error-text" role="alert">请检查秘书邮箱格式，每栏填写一个邮箱。</small> : null}
             </div>
           </div>
           <div className="cv-editor-grid">
@@ -265,22 +309,25 @@ export function ContactsView({ contacts, onSaveContact, onDeleteContact }) {
             <button
               className="nx-btn nx-btn-danger"
               type="button"
-              onClick={() => {
-                onDeleteContact(formData.id)
+              onClick={async () => {
+                if (!await mayDiscard()) return
+                if (await onDeleteContact(formData.id) === false) return
                 setEditingContact(null)
+                setBaseline(contactSignature(createEmptyContact()))
               }}
             >
               <Trash2 size={15} />
               删除
             </button>
           ) : (
-            <button className="nx-btn nx-btn-quiet" type="button" onClick={() => setEditingContact(null)}>
+            <button className="nx-btn nx-btn-quiet" type="button" onClick={() => selectContact(createEmptyContact())}>
               清空
             </button>
           )}
-          <button className="nx-btn nx-btn-primary" type="button" onClick={saveForm}>
+          <button className="nx-btn nx-btn-primary" type="button" onClick={() => saveForm()} disabled={!formData.name.trim() || invalidEmail || invalidSecretaryEmail}>
             保存联系人
           </button>
+          {onReturnToWorkflow ? <button className="nx-btn nx-btn-outline" type="button" onClick={() => saveForm(true)} disabled={!formData.name.trim() || invalidEmail || invalidSecretaryEmail}>保存并返回</button> : null}
         </div>
       </aside>
     </section>

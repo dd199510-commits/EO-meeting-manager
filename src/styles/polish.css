@@ -1,0 +1,207 @@
+/* Ice-blue surface layer. Workspace layout lives in the feature styles. */
+.app-shell.app-frame {
+  --ui-line: var(--nx-line);
+  --ui-line-strong: var(--nx-line-strong);
+  --ui-panel: var(--nx-panel);
+  --ui-panel-soft: var(--nx-panel-soft);
+  --ui-teal: var(--nx-accent);
+  --ui-teal-strong: var(--nx-accent-strong);
+  --accent: var(--nx-accent);
+  --accent-deep: var(--nx-accent-strong);
+  --accent-soft: var(--nx-accent-soft);
+  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--nx-ink);
+  background: #eef3fa;
+  -webkit-font-smoothing: antialiased;
+}
+.app-shell.app-frame .app-main,
+.app-shell.app-frame .app-page-content { background: transparent; }
+.app-shell.app-frame :is(h1, h2, h3) { color: #222b38; letter-spacing: -.015em; }
+.app-shell.app-frame :is(button, input, select, textarea) { font-family: inherit; }
+.app-shell.app-frame :is(.nx-card, .panel, .meeting-card, .workflow-blocker) {
+  background: #fafbfd;
+  border-color: #e0e7f2;
+  box-shadow: var(--nx-shadow-card);
+}
+.app-shell.app-frame :is(.nx-section-title, .cv-toolbar-copy strong, .cv-editor-head strong, .lv-title strong) { color: #303a4d; }
+.app-shell.app-frame :is(.nx-empty, .empty-state, .cv-empty) { color: #7d89a0; }
+
+/* One restrained set of controls across the new and legacy modules. */
+.app-shell.app-frame :is(.nx-btn, .primary-button, .ghost-button, .icon-button, .tab-button, .toolbar-menu-item) {
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  text-shadow: none;
+  transition: background .14s ease, border-color .14s ease, color .14s ease;
+}
+.app-shell.app-frame :is(.nx-btn-primary, .primary-button) {
+  background: linear-gradient(180deg, #6d8dd5, #5a79c6);
+  border-color: #6584cc;
+  color: #fff;
+  box-shadow: inset 0 1px 0 #ffffff1f, 0 2px 3px #4566aa0d;
+}
+.app-shell.app-frame :is(.nx-btn-primary, .primary-button):hover:not(:disabled) {
+  background: linear-gradient(180deg, #6586d0, #5272be);
+  border-color: #5575bf;
+  color: #fff;
+}
+.app-shell.app-frame :is(.nx-btn-outline, .ghost-button, .icon-button) {
+  border-color: #d9e2f1;
+  background: #fbfcff;
+  color: #4c5b76;
+  box-shadow: none;
+}
+.app-shell.app-frame :is(.nx-btn-outline, .ghost-button, .icon-button):hover:not(:disabled) {
+  background: #edf3ff;
+  border-color: #c4d3f0;
+  color: #4d6cb3;
+}
+.app-shell.app-frame .nx-btn-quiet { color: #6b7891; background: transparent; border-color: transparent; box-shadow: none; }
+.app-shell.app-frame .nx-btn-quiet:hover:not(:disabled) { background: #edf2fb; color: #4d6cb3; }
+.app-shell.app-frame :is(.nx-btn-danger, .danger-button, .ghost-button.danger, .icon-button.danger) {
+  color: #b14e4e;
+  background: #fff6f5;
+  border-color: #eed6d4;
+}
+.app-shell.app-frame :is(.nx-btn-danger, .danger-button, .ghost-button.danger, .icon-button.danger):hover:not(:disabled) { background: #ffece9; border-color: #dfb5b0; color: #a44242; }
+.app-shell.app-frame :is(.nx-btn, .primary-button, .ghost-button, .icon-button):active:not(:disabled) { transform: translateY(.5px); }
+.app-shell.app-frame button:disabled { opacity: .48; box-shadow: none; }
+.app-shell.app-frame :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  font-size: 14px;
+  color: #3e4a60;
+  border-color: #d4dfef;
+  background: #fbfcff;
+  box-shadow: none;
+}
+.app-shell.app-frame :is(input, textarea)::placeholder { color: #97a2b7; }
+.app-shell.app-frame :is(input, select, textarea):focus {
+  border-color: #91aae1;
+  background: #fff;
+  box-shadow: 0 0 0 3px #7898df16;
+  outline: none;
+}
+.app-shell.app-frame :is(button, [tabindex]):focus-visible { outline: 2px solid #8ca8e4; outline-offset: 2px; }
+.app-shell.app-frame input:is([type="checkbox"], [type="radio"]) { accent-color: #6d8dd5; }
+.app-shell.app-frame .nx-input[aria-invalid="true"] { background: #fff9f8; border-color: #d79c97; }
+.app-shell.app-frame :is(.field > span, .nx-field > span) { color: #69758c; font-size: 13px; font-weight: 500; }
+.app-shell.app-frame .nx-badge { font-weight: 500; }
+.app-shell.app-frame .nx-badge-accent { background: #edf3ff; color: #5777bb; border-color: #dce6fa; }
+.app-shell.app-frame .nx-badge-warn { background: #fff4e6; color: #b8792f; border-color: #f2dfc1; }
+.app-shell.app-frame :is(.error-text, .warning-text) { font-size: 12px; }
+
+/* Tables use hairline rows rather than stacked floating cards. */
+.app-shell.app-frame :is(.nx-table, .time-analysis-excel-table, .time-analysis-comparison-table, .time-analysis-grid-scroll table) {
+  color: #46536b;
+  background: #fafbfd;
+  font-size: 13px;
+}
+.app-shell.app-frame :is(.nx-table, .time-analysis-excel-table, .time-analysis-comparison-table, .time-analysis-grid-scroll table) th {
+  color: #6b7891;
+  background: #f2f6fc;
+  border-color: #e0e8f5;
+  font-size: 12px;
+  font-weight: 500;
+}
+.app-shell.app-frame :is(.nx-table, .time-analysis-excel-table, .time-analysis-comparison-table, .time-analysis-grid-scroll table) td { border-color: #e7edf7; }
+.app-shell.app-frame :is(.nx-table, .time-analysis-excel-table, .time-analysis-grid-scroll table) tbody tr:hover td { background: #edf3ff; }
+.app-shell.app-frame :is(.nx-table, .time-analysis-excel-table) tbody tr:nth-child(even) { background: #f7f9fd; }
+
+/* Meeting library: a low-contrast index, clear rows and a quiet detail panel. */
+.app-shell.app-frame :is(.mv-nav, .mv-detail-panel) { background: #f7f9fd; box-shadow: none; border-color: #e3eaf5; }
+.app-shell.app-frame .mv-list-panel { background: #fafbfd; border-color: #dde6f3; box-shadow: none; }
+.app-shell.app-frame :is(.mv-toolbar, .mv-chip-bar) { background: #fafbfd; border-color: #e6edf7; }
+.app-shell.app-frame :is(.mv-nav-item, .mv-subnav-item) { color: #64718a; }
+.app-shell.app-frame :is(.mv-nav-item span, .mv-subnav-item span) { font-size: 13px; }
+.app-shell.app-frame :is(.mv-nav-item-active, .mv-subnav-item-active),
+.app-shell.app-frame :is(.mv-nav-item-active, .mv-subnav-item-active):hover { background: #e7eeff; color: #4c6dbb; }
+.app-shell.app-frame .mv-table-head { background: #f1f5fc; color: #7a87a0; border-color: #e3eaf6; }
+.app-shell.app-frame .mv-row { background: #fafbfd; border-color: #e7edf7; }
+.app-shell.app-frame .mv-row:hover { background: #f0f5ff; }
+.app-shell.app-frame .mv-row-selected,
+.app-shell.app-frame .mv-row-selected:hover { background: #e7eeff; box-shadow: inset 2px 0 0 #7d9ee5; }
+.app-shell.app-frame .mv-cell { color: #64718a; font-size: 13px; }
+.app-shell.app-frame .mv-cell-name strong { color: #2e384b; font-size: 14px; }
+.app-shell.app-frame .mv-chip { background: #f8faff; border-color: #e1e8f4; color: #73819b; }
+.app-shell.app-frame .mv-chip-active { background: #e7eeff; border-color: #cbdaf7; color: #5574b9; }
+.app-shell.app-frame :is(.mv-section-head, .mv-detail-head) { border-color: #e3eaf5; }
+.app-shell.app-frame .mv-detail-panel :is(p, dd) { color: #66758b; }
+
+/* Contacts and audit records share the same quiet list language. */
+.app-shell.app-frame :is(.cv-list-panel, .cv-editor-panel, .lv-panel, .tv-workspace) { background: #fafbfd; border-color: #e1e8f4; box-shadow: none; }
+.app-shell.app-frame :is(.cv-row, .lv-row, .lv-log-row) { border-color: #e5ecf7; }
+.app-shell.app-frame .cv-row:hover { background: #f0f5ff; }
+.app-shell.app-frame .cv-row-active,
+.app-shell.app-frame .cv-row-active:hover { background: #e7eeff; box-shadow: none; }
+.app-shell.app-frame .cv-avatar { color: #7893c6; background: #ecf2ff; }
+.app-shell.app-frame .cv-row-active .cv-avatar { color: #587ac3; background: #dce8ff; }
+.app-shell.app-frame .cv-row-main strong { color: #3c4860; font-size: 14px; font-weight: 500; }
+.app-shell.app-frame .cv-row-main em { color: #8b97ac; font-size: 12px; }
+.app-shell.app-frame .cv-editor-head { border-color: #e5ecf6; }
+.app-shell.app-frame .cv-editor-head > span { color: #7f8ca3; }
+.app-shell.app-frame :is(.cv-secretary-row, .lv-controls, .lv-filters, .lv-summary) { background: #f4f7fc; border-color: #e2eaf5; box-shadow: none; }
+
+/* Analysis reads as a light canvas, with common controls in one unobtrusive band. */
+.app-shell.app-frame :is(.time-analysis-overview-group, .time-analysis-panel, .time-analysis-excel-panel, .time-analysis-mode-bar) {
+  background: #fafbfd;
+  border-color: #e0e8f5;
+  box-shadow: none;
+}
+.app-shell.app-frame .time-analysis-hero { background: #f7f9fd; border-color: #e5ecf6; box-shadow: none; }
+.app-shell.app-frame .time-analysis-mode-tabs { background: #f0f4fc; border-color: #e2eaf7; box-shadow: none; }
+.app-shell.app-frame .time-analysis-mode-tab { color: #7a87a0; font-size: 14px; font-weight: 400; }
+.app-shell.app-frame .time-analysis-mode-tab-active { color: #5477c0; background: #e6eeff; box-shadow: none; }
+.app-shell.app-frame .nx-analysis-filter-bar { color: #71809a; background: #f8faff; border-color: #e7edf7; box-shadow: none; font-size: 13px; }
+.app-shell.app-frame .nx-analysis-filter-bar > strong { color: #485871; font-weight: 500; }
+.app-shell.app-frame .nx-analysis-filter-bar > span { color: #8290a9; }
+.app-shell.app-frame .nx-analysis-filter-chip { color: #5d7ab8; background: #eaf1ff; border-color: transparent; }
+.app-shell.app-frame .time-analysis-hero-main > span { color: #7184a9; font-weight: 500; }
+.app-shell.app-frame .time-analysis-excel-title strong { color: #33425c; font-size: 24px; font-weight: 600; line-height: 1.4; }
+.app-shell.app-frame .time-analysis-excel-title > span { background: #edf3ff; color: #6887c6; }
+.app-shell.app-frame :is(.time-analysis-excel-count-card, .time-analysis-excel-metric, .time-analysis-kpi) { background: #f8faff; border-color: #e1e9f6; box-shadow: none; }
+.app-shell.app-frame .time-analysis-excel-count-card { background: #eef4ff; border-color: #d7e3fa; }
+.app-shell.app-frame .time-analysis-excel-count-card strong { color: #4e71bb; }
+.app-shell.app-frame .time-analysis-excel-count-card::before { background: #8fa9e1; }
+.app-shell.app-frame .time-analysis-excel-metric::before { background: #c5d3ed; }
+.app-shell.app-frame .time-analysis-excel-metric-green strong { color: #617cae; }
+.app-shell.app-frame .time-analysis-excel-kpis :is(span, em, small) { color: #8290a7; }
+.app-shell.app-frame .time-analysis-excel-metric-purple strong { color: #7382ac; }
+.app-shell.app-frame :is(.time-analysis-panel-head, .time-analysis-chart-legend) { color: #687a9a; }
+.app-shell.app-frame .time-analysis-toggle-chip { background: #f8faff; border-color: #e0e8f7; color: #7a88a3; box-shadow: none; }
+.app-shell.app-frame .time-analysis-toggle-chip-on { background: #eaf1ff; border-color: #c9daf9; color: #5b7fc4; box-shadow: inset 2px 0 0 #88a9eb; }
+.app-shell.app-frame .time-analysis-import-feedback { background: #edf3ff; border-color: #d6e3fa; color: #5c79b4; }
+.app-shell.app-frame :is(.time-analysis-grid-scroll, .time-analysis-table-pagination) { background: #fafbfd; border-color: #e2eaf6; }
+
+/* Floating tools and forms have one clear edge. Content areas remain unstacked. */
+.app-shell.app-frame :is(.modal-backdrop, .modal-card, .nx-import-preview),
+.nx-confirm-backdrop,
+.nx-toast-stack { font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
+.app-shell.app-frame .modal-backdrop,
+.nx-confirm-backdrop { background: #2636504d; backdrop-filter: blur(4px); }
+.app-shell.app-frame :is(.modal-card, .modal-panel, .modal-shell, .edit-modal-panel),
+.nx-confirm-card { color: #39475f; background: #fafbfd; border: 1px solid #e0e8f5; border-radius: 16px; box-shadow: var(--nx-shadow-modal); }
+.app-shell.app-frame .modal-header { border-color: #e5ecf7; }
+.app-shell.app-frame .modal-header h2,
+.nx-confirm-card h2 { color: #29344a; font-size: 20px; font-weight: 600; }
+.app-shell.app-frame .nx-meeting-editor .modal-section { background: #f4f7fd; border-color: #e1e9f6; box-shadow: none; }
+.app-shell.app-frame :is(.nx-advanced-meeting-settings, .rule-builder-shell) { border-color: #dfe8f5; background: #f8faff; box-shadow: none; }
+.app-shell.app-frame .nx-advanced-meeting-settings > summary { color: #6b7fa5; font-size: 13px; }
+.app-shell.app-frame .nx-meeting-editor .panel-actions { background: #fafbfd; border-top-color: #e2eaf6; box-shadow: none; }
+.app-shell.app-frame :is(.nx-import-mode, .nx-import-summary) { background: #f0f5ff; border-color: #dce6f8; color: #677da4; }
+.app-shell.app-frame :is(.mv-more-popover, .nx-analysis-export-popover, .toolbar-menu-popover, .mv-filter-layer) { border-color: #dde7f6; background: #fbfcff; box-shadow: var(--nx-shadow-float); }
+.app-shell.app-frame .nx-analysis-export-popover :is(button, select) { font-size: 13px; }
+.app-shell.app-frame .attendee-resolver-empty { color: #8b9ab0; border-color: #dfe7f4; background: #f8faff; }
+.app-shell.app-frame .attendee-pill { color: #637fae; background: #eaf1ff; border-color: #dce6f7; }
+
+/* Semantic tones remain distinct from the decorative blue accent. */
+.app-shell.app-frame :is(.warning-panel, .workflow-blocker-step-current, .nx-persistence-banner, .dispatch-alert, .outlook-invite-warning, .outlook-invite-preview-card-warning) { background: #fff5e9; border-color: #f0dbbd; color: #ae752c; }
+.app-shell.app-frame :is(.error-text, .time-analysis-status-main-danger) { color: #b55656; }
+.app-shell.app-frame :is(.warning-text, .time-analysis-status-main-warning) { color: #b97d34; }
+.app-shell.app-frame .time-analysis-status-main-success { color: #568b69; }
+.app-shell.app-frame .time-analysis-status-main-info,
+.app-shell.app-frame .time-analysis-status-main-notice { color: #6787c3; }
+.nx-toast { color: #465773; border-color: #dfe7f4; background: #fafcff; box-shadow: var(--nx-shadow-float); }
+.nx-toast-success > svg { color: #639076; }
+.nx-toast-warning > svg { color: #bf8741; }
+.nx-toast-error > svg { color: #bd6262; }

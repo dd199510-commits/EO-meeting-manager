@@ -60,7 +60,7 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
       return {
         ...row,
         matchedMeeting: manualMeeting,
-        valid: true,
+        valid: Boolean(row.date),
         manuallyMatched: true,
         isDuplicate: Boolean(manualMeeting.history?.includes(row.date)),
       }
@@ -69,8 +69,16 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
     return row
   })
 
-  const matchedRows = rowsWithManualMatch.filter((row) => row.valid)
+  const seenRows = new Set()
+  const matchedRows = rowsWithManualMatch.filter((row) => {
+    if (!row.valid || row.isDuplicate) return false
+    const key = `${row.matchedMeeting.id}:${row.date}`
+    if (seenRows.has(key)) return false
+    seenRows.add(key)
+    return true
+  })
   const unmatchedRows = rowsWithManualMatch.filter((row) => !row.valid)
+  const skippedCount = rowsWithManualMatch.length - unmatchedRows.length - matchedRows.length
 
   return (
     <div className="modal-backdrop" onClick={requestClose}>
@@ -84,7 +92,7 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
         <label className="field">
           <span>粘贴制表符分隔数据</span>
           <div className="info-note">
-            建议直接粘贴从表格复制的三列数据：会议主题、开始日期、开始时间。系统会先自动匹配，再让你手动补齐未识别项。
+            粘贴会议主题、开始日期和开始时间。支持表格或 CSV；多个匹配候选需要确认，重复日期会跳过。
           </div>
           <textarea
             rows="10"
@@ -94,6 +102,7 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
           />
         </label>
         {error ? <p className="error-text">{error}</p> : null}
+        {skippedCount > 0 ? <p className="info-note" role="status">已跳过 {skippedCount} 条与现有历史或本次输入重复的日期记录。</p> : null}
         {parsedRows.length > 0 ? (
           <div className="batch-grid">
             <div className="panel">
@@ -120,11 +129,13 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
                   <div key={row.id} className="log-item">
                     <div>
                       <strong>{row.originalName}</strong>
-                      <p>{row.date || '日期无效或未匹配到会议'}</p>
+                      <p>{row.error || row.date || '日期无效或未匹配到会议'}</p>
                     </div>
                     <div className="manual-map-box">
                       <select
                         value={manualMap[row.id] ?? ''}
+                        disabled={!row.date}
+                        aria-label={`为${row.originalName}选择会议`}
                         onChange={(event) =>
                           setManualMap((current) => ({
                             ...current,
@@ -133,7 +144,7 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
                         }
                       >
                         <option value="">手动指定会议</option>
-                        {meetings
+                        {(row.candidates?.length ? row.candidates : meetings)
                           .filter((meeting) => meeting.status === 'active')
                           .map((meeting) => (
                             <option key={meeting.id} value={meeting.id}>
@@ -149,7 +160,7 @@ export function BatchImportModal({ open, meetings, onClose, onConfirm }) {
           </div>
         ) : null}
         <div className="panel-actions">
-          <button className="ghost-button" onClick={handleClose}>
+          <button className="ghost-button" onClick={requestClose}>
             取消
           </button>
           <button

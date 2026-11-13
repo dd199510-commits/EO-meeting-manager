@@ -19,6 +19,11 @@ import {
 import { TIME_ANALYSIS_COLUMNS } from './timeAnalysisData.js'
 import { TIME_RECORD_V1_CSV } from './timeRecordV1Data.js'
 import { IS_PUBLIC_EMPTY_BUILD } from '../../lib/publicBuild.js'
+import { parseDelimitedText, serializeDelimitedRows } from '../../lib/delimitedText.js'
+import { persistJson, blockStorageKey } from '../../lib/persistence.js'
+import { confirmDialog } from '../../components/Feedback'
+import { TimeImportModal } from './TimeImportModal.jsx'
+import { resolveTimeImport } from './timeImportUtils.js'
 import {
   HOUR_BUCKETS,
   STATUS_RULES,
@@ -35,7 +40,6 @@ import {
   getRecordWeekdayKey,
   getUniqueOptions,
   groupSummary,
-  pickMeetingRowsFromSheets,
   parsePastedMeetings,
   parseSampleRecords,
   quarterTrend,
@@ -48,6 +52,8 @@ const STORAGE_KEY = 'meeting-manager:time-analysis-records:v2'
 const FILTER_STORAGE_KEY = 'meeting-manager:time-analysis-filters:v1'
 const SAVED_VIEWS_STORAGE_KEY = 'meeting-manager:time-analysis-saved-views:v1'
 const TRACKED_GROUPS_STORAGE_KEY = 'meeting-manager:time-analysis-tracked-groups:v5'
+const UI_STORAGE_KEY = 'meeting-manager:time-analysis-ui:v1'
+const UNDO_STORAGE_KEY = 'meeting-manager:time-analysis-import-undo:v1'
 // 分享版本不预置个人会议分类；用户仍可通过“维护分类”建立自己的重点会议。
 const DEFAULT_TRACKED_MEETING_PRESETS = []
 const DEFAULT_TRACKED_PLANNED_MINUTES = DEFAULT_TRACKED_MEETING_PRESETS.reduce((minutesMap, group) => {
@@ -147,6 +153,11 @@ const DATA_TABLE_PAGE_SIZE = 40
 
 export function TimeAnalysisWorkbench() {
   const fileInputRef = useRef(null)
+  const [initialUi] = useState(() => readJson(UI_STORAGE_KEY, {}) || {})
+  const [importSource, setImportSource] = useState(null)
+  const [pasteText, setPasteText] = useState('')
+  const [showPasteImport, setShowPasteImport] = useState(false)
+  const [exportScope, setExportScope] = useState(() => initialUi.exportScope === 'all' ? 'all' : 'filtered')
   const [records, setRecords] = useState(() => readStoredRecords())
   const quarters = useMemo(() => getUniqueOptions(records, 'quarter'), [records])
   const [filters, setFilters] = useState(() => ({
@@ -154,20 +165,20 @@ export function TimeAnalysisWorkbench() {
     ...readStoredFilters(),
     quarter: readStoredFilters().quarter || quarters.at(-1) || 'all',
   }))
-  const [selectedSeries, setSelectedSeries] = useState('')
+  const [selectedSeries, setSelectedSeries] = useState(() => initialUi.selectedSeries || '')
   const [importNotice, setImportNotice] = useState('')
   const [copyNotice, setCopyNotice] = useState('')
   const [sharePreview, setSharePreview] = useState('')
-  const [lastDataSnapshot, setLastDataSnapshot] = useState(null)
+  const [lastDataSnapshot, setLastDataSnapshot] = useState(() => readStoredUndoSnapshot())
   const [savedViews, setSavedViews] = useState(() => readStoredSavedViews())
-  const [qualityFilter, setQualityFilter] = useState('all')
+  const [qualityFilter, setQualityFilter] = useState(() => initialUi.qualityFilter || 'all')
   const [compareDimension, setCompareDimension] = useState('meetingType')
   const [benchmarkQuarter, setBenchmarkQuarter] = useState('previous')
   const [trendMetricKey, setTrendMetricKey] = useState('actualMinutes')
   const [overviewTrendMode, setOverviewTrendMode] = useState('quarter')
-  const [workspaceMode, setWorkspaceMode] = useState('overview')
-  const [tableSort, setTableSort] = useState({ key: 'date', direction: 'asc' })
-  const [tablePage, setTablePage] = useState(1)
+  const [workspaceMode, setWorkspaceMode] = useState(() => ['overview', 'diagnosis', 'data'].includes(initialUi.workspaceMode) ? initialUi.workspaceMode : 'overview')
+  const [tableSort, setTableSort] = useState(() => initialUi.tableSort || { key: 'date', direction: 'asc' })
+  const [tablePage, setTablePage] = useState(() => Math.max(1, Number(initialUi.tablePage) || 1))
   const [isQuarterPlayback, setIsQuarterPlayback] = useState(false)
   const [activeReportStepKey, setActiveReportStepKey] = useState('overview')
   const [isReportPlayback, setIsReportPlayback] = useState(false)
@@ -319,10 +330,14 @@ export function TimeAnalysisWorkbench() {
     [qualityFilteredTableRecords, tableSort],
   )
   const tablePageCount = Math.max(1, Math.ceil(visibleTableRecords.length / DATA_TABLE_PAGE_SIZE))
+  const currentTablePage = Math.min(tablePage, tablePageCount)
   const pagedTableRecords = useMemo(() => {
-    const start = (tablePage - 1) * DATA_TABLE_PAGE_SIZE
+    const start = (currentTablePage - 1) * DATA_TABLE_PAGE_SIZE
     return visibleTableRecords.slice(start, start + DATA_TABLE_PAGE_SIZE)
-  }, [tablePage, visibleTableRecords])
+  }, [currentTablePage, visibleTableRecords])
+  const exportRecords = exportScope === 'all' ? records : visibleTableRecords
+  const exportRangeLabel = exportScope === 'all' ? '全部明细' : getCurrentTimeWindowLabel()
+  const exportFileStem = `meeting-time-analysis-${exportRangeLabel}-${exportRecords.length}条`.replace(/[\\/:*?"<>|]/g, '-')
   const previousQuarterRecords = useMemo(
     () => records.filter((record) => record.quarter === quarterSummary.previousQuarter),
     [quarterSummary.previousQuarter, records],
@@ -412,8 +427,10 @@ export function TimeAnalysisWorkbench() {
   }, [trackedGroups])
 
   useEffect(() => {
-    setTablePage((current) => Math.min(current, tablePageCount))
-  }, [tablePageCount])
+    persistJson(UI_STORAGE_KEY, { workspaceMode, tablePage, tableSort, selectedSeries, qualityFilter, exportScope })
+  }, [workspaceMode, tablePage, tableSort, selectedSeries, qualityFilter, exportScope])
+
+  useEffect(() => { persistJson(UNDO_STORAGE_KEY, lastDataSnapshot) }, [lastDataSnapshot])
 
   useEffect(() => {
     if (!isQuarterPlayback || quarters.length <= 1) return undefined
@@ -517,8 +534,8 @@ export function TimeAnalysisWorkbench() {
   }
 
   async function handleCopyCleanData() {
-    const copied = await copyTextToClipboard(serializeRecords(records))
-    showCopyNotice(copied ? '已复制标准表，可直接粘贴回 Excel 或表格工具' : '复制失败，可尝试下载 TSV')
+    const copied = await copyTextToClipboard(serializeRecords(exportRecords))
+    showCopyNotice(copied ? `已复制${exportScope === 'all' ? '全部' : '当前筛选'} ${exportRecords.length} 条明细` : '复制失败，可尝试下载 TSV')
   }
 
   async function handleExportReport() {
@@ -577,14 +594,15 @@ export function TimeAnalysisWorkbench() {
   }
 
   function handleDownloadCleanData() {
-    downloadText(`meeting-time-analysis-${selectedQuarter || 'all'}.tsv`, serializeRecords(records))
+    downloadText(`${exportFileStem}.tsv`, serializeRecords(exportRecords))
   }
 
   async function handleDownloadExcel() {
     const { default: writeExcelFile } = await import('write-excel-file/browser')
-    const rows = serializeRecords(records).split('\n').map((line) => line.split('\t'))
-    await writeExcelFile(rows, { sheet: '会议时间分析明细' })
-      .toFile(`meeting-time-analysis-${selectedQuarter || 'all'}.xlsx`)
+    const rows = parseDelimitedText(serializeRecords(exportRecords), '\t')
+    try {
+      await writeExcelFile(rows, { sheet: '会议时间分析明细' }).toFile(`${exportFileStem}.xlsx`)
+    } catch (error) { showCopyNotice(`Excel 导出失败：${error.message}`) }
   }
 
   function handleDownloadReport() {
@@ -625,25 +643,29 @@ export function TimeAnalysisWorkbench() {
     if (!file) return
     try {
       if (/\.xlsx?$/i.test(file.name)) {
-        const { records: importedRecords, sheetName } = await parseWorkbookFile(file)
-        if (importedRecords.length > 0) {
-          applyImportedRecords(importedRecords, `已导入 ${file.name} / ${sheetName}：${importedRecords.length} 条`, '导入文件')
-        } else {
-          setImportNotice('没有在工作簿中识别到会议明细表')
-        }
+        const { default: readExcelFile } = await import('read-excel-file/browser')
+        const workbookSheets = await readExcelFile(file)
+        const sheets = workbookSheets.map((worksheet) => ({ name: worksheet.sheet, rows: worksheet.data })).filter((sheet) => sheet.rows.length)
+        if (!sheets.length) throw new Error('工作簿没有可读取的工作表')
+        setImportSource({ name: file.name, sheets })
       } else {
         const text = await file.text()
-        const nextRecords = parsePastedMeetings(text)
-        if (nextRecords.length > 0) {
-          applyImportedRecords(nextRecords, `已导入 ${file.name}：${nextRecords.length} 条`, '导入文件')
-        } else {
-          setImportNotice('没有识别到可导入的会议明细')
-        }
+        const rows = parseDelimitedText(text)
+        if (rows.length < 2) throw new Error('至少需要表头和一行明细')
+        setImportSource({ name: file.name, sheets: [{ name: '文本表格', rows }] })
       }
     } catch (error) {
       setImportNotice(`导入失败：${error.message}`)
     }
     event.target.value = ''
+  }
+
+  async function confirmTimeImport(preview, mode) {
+    if (mode === 'replace' && records.length && !await confirmDialog({ title: '覆盖会议明细', message: `当前 ${records.length} 条明细将被本次有效数据替换。可在顶部撤销本次操作。`, confirmLabel: '确认覆盖', danger: true })) return
+    const result = resolveTimeImport(preview, records, mode)
+    applyImportedRecords(result.records, `${mode === 'replace' ? '已覆盖' : '已追加'} ${result.addedCount} 条明细；异常和重复项已跳过。`, '导入文件')
+    setImportSource(null)
+    setTablePage(1)
   }
 
   function rememberDataSnapshot(reason) {
@@ -707,6 +729,8 @@ export function TimeAnalysisWorkbench() {
 
   function handleReportReadinessAction(item) {
     if (item.key === 'quality') {
+      setWorkspaceMode('data')
+      setTablePage(1)
       const firstIssue = dataQuality.items.find((qualityItem) => qualityItem.count > 0)
       if (firstIssue) setQualityFilter(firstIssue.type)
       setActiveReportStepKey('quality')
@@ -896,6 +920,44 @@ export function TimeAnalysisWorkbench() {
     setTrackedGroups((current) => current.filter((group) => group.id !== id || group.locked))
   }
 
+  if (records.length === 0) {
+    return (
+      <section className="eo-analysis-empty" aria-labelledby="analysis-empty-title">
+        <header className="eo-analysis-empty-heading">
+          <span>分析工作区</span>
+          <h1 id="analysis-empty-title">时间分析</h1>
+          <p>从会议明细开始，查看时间分布、用时偏差与季度变化。</p>
+        </header>
+        <div className="eo-analysis-empty-panel">
+          <span className="eo-analysis-empty-icon" aria-hidden="true"><BarChart3 size={28} strokeWidth={1.5} /></span>
+          <h2>先导入一份会议明细</h2>
+          <p>支持 Excel、CSV 和从表格复制的数据。导入前可以选择工作表、核对列对应关系，并检查异常与重复行。</p>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.tsv,.txt" onChange={handleFileImport} hidden />
+          <div className="eo-analysis-empty-actions">
+            <button className="nx-btn nx-btn-primary" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={16} />导入会议明细</button>
+            <button className="nx-btn nx-btn-outline" type="button" onClick={() => setShowPasteImport((current) => !current)} aria-expanded={showPasteImport}><Copy size={16} />从 Excel 粘贴</button>
+          </div>
+          <div className="eo-analysis-empty-secondary">
+            <button type="button" onClick={async () => { const copied = await copyTextToClipboard(serializeRecords([])); showCopyNotice(copied ? '已复制标准表头，可粘贴到 Excel 后填写明细。' : '复制失败，请使用下方列名准备表格。') }}>复制标准表头</button>
+            <span aria-hidden="true">·</span>
+            <button type="button" onClick={() => { setRecords([createBlankRecord(0, { date: getDefaultDateForQuarter(activeQuarterFilter) })]); setFilters({ ...DEFAULT_FILTERS, quarter: 'all' }); setQualityFilter('all'); setWorkspaceMode('data'); setTablePage(1) }}>手动录入一条</button>
+          </div>
+          <p className="eo-analysis-empty-columns">建议包含日期、会议主题、预计开始/结束及实际开始/结束。数据仅保存在当前设备。</p>
+          {showPasteImport ? <div className="eo-analysis-paste">
+            <label htmlFor="analysis-empty-paste">粘贴带表头的明细</label>
+            <textarea id="analysis-empty-paste" rows={6} value={pasteText} onChange={(event) => setPasteText(event.target.value)} placeholder={TIME_ANALYSIS_COLUMNS.map((column) => column.label).join('\t')} />
+            <button className="nx-btn nx-btn-primary" type="button" disabled={!pasteText.trim()} onClick={() => { try { const rows = parseDelimitedText(pasteText); if (rows.length < 2) throw new Error('请同时粘贴表头和至少一行明细'); setImportSource({ name: '粘贴的会议明细', sheets: [{ name: '表格粘贴', rows }] }) } catch (error) { showCopyNotice(error.message) } }}>检查粘贴内容</button>
+          </div> : null}
+        </div>
+        {(importNotice || copyNotice || lastDataSnapshot) ? <div className="eo-analysis-empty-feedback" role="status">
+          {(copyNotice || importNotice) ? <p>{copyNotice || importNotice}</p> : null}
+          {lastDataSnapshot ? <button className="nx-btn nx-btn-quiet" type="button" onClick={restoreDataSnapshot}><RotateCcw size={15} />撤销{lastDataSnapshot.reason}</button> : null}
+        </div> : null}
+        {importSource ? <TimeImportModal source={importSource} currentRecords={records} onClose={() => setImportSource(null)} onConfirm={confirmTimeImport} /> : null}
+      </section>
+    )
+  }
+
   return (
     <section className="time-analysis-workbench">
       <div className="time-analysis-mode-bar">
@@ -924,6 +986,13 @@ export function TimeAnalysisWorkbench() {
         </div>
       </div>
       <div className="time-analysis-overview-group">
+        <div className="nx-analysis-filter-bar" aria-label="当前分析筛选">
+          <strong>当前 {visibleTableRecords.length} / 共 {records.length} 条</strong><span>{getCurrentTimeWindowLabel()}</span>
+          <div className="nx-analysis-filter-chips">{activeFilterItems.filter((item) => item.key !== 'quarter').map((item) => <button className="nx-btn nx-btn-quiet nx-analysis-filter-chip" type="button" key={item.kind + item.key} aria-label={'清除' + item.label + '筛选'} onClick={() => { if (item.kind === 'quality') setQualityFilter('all'); else patchFilter(item.key, item.key === 'keyword' ? '' : 'all'); setTablePage(1) }}>{item.label}：{item.value}<span aria-hidden="true">×</span></button>)}</div>
+          <button className="nx-btn nx-btn-quiet" type="button" onClick={() => { setFilters({ ...DEFAULT_FILTERS, quarter: 'all' }); setDateDraft({ dateStart: '', dateEnd: '' }); setQualityFilter('all'); setSelectedSeries(''); setTablePage(1) }}>重置筛选</button>
+        </div>
+        {(importNotice || lastDataSnapshot) ? <div className="time-analysis-import-feedback" role="status">{importNotice ? <p className="time-analysis-import-notice">{importNotice}</p> : null}{lastDataSnapshot ? <button className="ghost-button" type="button" onClick={restoreDataSnapshot}><RotateCcw size={15} />撤销{lastDataSnapshot.reason} · 恢复 {lastDataSnapshot.records.length} 条</button> : null}</div> : null}
+        {importSource ? <TimeImportModal source={importSource} currentRecords={records} onClose={() => setImportSource(null)} onConfirm={confirmTimeImport} /> : null}
         <div className="time-analysis-hero">
           <div className="time-analysis-hero-main">
             <span>会议时间分析实验台</span>
@@ -993,26 +1062,16 @@ export function TimeAnalysisWorkbench() {
               accept=".xlsx,.xls,.csv,.tsv,.txt"
               onChange={handleFileImport}
             />
-            <button className="ghost-button" type="button" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={15} />
-              导入表格
-            </button>
-            <button className="ghost-button" type="button" onClick={handleCopyCleanData}>
-              <Copy size={15} />
-              复制标准表
-            </button>
-            <button className="ghost-button" type="button" onClick={handleDownloadCleanData}>
-              <FileDown size={15} />
-              下载TSV
-            </button>
-            <button className="ghost-button" type="button" onClick={handleDownloadExcel}>
-              <FileDown size={15} />
-              下载Excel
-            </button>
-            <button className="primary-button" type="button" onClick={handleExportReport}>
-              <FileDown size={15} />
-              复制报告摘要
-            </button>
+            {workspaceMode === 'overview' ? <button className="primary-button" type="button" onClick={handleExportReport}><Copy size={15} />复制复盘摘要</button>
+              : workspaceMode === 'diagnosis' ? <button className="primary-button" type="button" onClick={() => setWorkspaceMode('data')}><Table2 size={15} />查看相关明细</button>
+                : <button className="primary-button" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={15} />导入表格</button>}
+            {workspaceMode !== 'data' ? <button className="ghost-button" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={15} />导入数据</button> : null}
+            <details className="nx-analysis-export-menu"><summary className="ghost-button"><FileDown size={15} />导出数据</summary><div className="nx-analysis-export-popover">
+              <label className="nx-field"><span>导出范围</span><select className="nx-input" value={exportScope} onChange={(event) => setExportScope(event.target.value)}><option value="filtered">当前筛选 · {visibleTableRecords.length} 条</option><option value="all">全部明细 · {records.length} 条</option></select></label>
+              <button className="nx-btn nx-btn-quiet" type="button" onClick={handleCopyCleanData}>复制标准表</button>
+              <button className="nx-btn nx-btn-quiet" type="button" onClick={handleDownloadCleanData}>下载 TSV</button>
+              <button className="nx-btn nx-btn-quiet" type="button" onClick={handleDownloadExcel}>下载 Excel</button>
+            </div></details>
           </div>
         </div>
 
@@ -1096,29 +1155,18 @@ export function TimeAnalysisWorkbench() {
 
       {workspaceMode === 'data' ? <div className="time-analysis-panel time-analysis-input-panel">
         <PanelHead icon={Table2} title="会议明细" meta={`${visibleTableRecords.length}/${tableRecords.length} 条`} />
-        {(importNotice || lastDataSnapshot) ? (
-          <div className="time-analysis-import-feedback">
-            {importNotice ? <p className="time-analysis-import-notice">{importNotice}</p> : null}
-            {lastDataSnapshot ? (
-              <button className="ghost-button" type="button" onClick={restoreDataSnapshot}>
-                <RotateCcw size={15} />
-                撤销{lastDataSnapshot.reason}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
         <DataQualityPanel
           quality={dataQuality}
           activeType={qualityFilter}
           onSelectType={(type) => setQualityFilter((current) => (current === type ? 'all' : type))}
         />
         <div className="time-analysis-table-pagination" aria-label="会议明细分页">
-          <span>每页 {DATA_TABLE_PAGE_SIZE} 条 · 第 {tablePage}/{tablePageCount} 页</span>
+          <span>每页 {DATA_TABLE_PAGE_SIZE} 条 · 第 {currentTablePage}/{tablePageCount} 页</span>
           <div>
-            <button className="ghost-button" type="button" onClick={() => setTablePage((current) => Math.max(1, current - 1))} disabled={tablePage <= 1}>
+            <button className="ghost-button" type="button" onClick={() => setTablePage(Math.max(1, currentTablePage - 1))} disabled={currentTablePage <= 1}>
               上一页
             </button>
-            <button className="ghost-button" type="button" onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} disabled={tablePage >= tablePageCount}>
+            <button className="ghost-button" type="button" onClick={() => setTablePage(Math.min(tablePageCount, currentTablePage + 1))} disabled={currentTablePage >= tablePageCount}>
               下一页
             </button>
           </div>
@@ -1574,16 +1622,6 @@ function getTableSortLabel(sort) {
   }
   const label = labels[sort?.key] || '日期'
   return `按${label}${sort?.direction === 'desc' ? '降序' : '升序'}排列`
-}
-
-async function parseWorkbookFile(file) {
-  const { default: readExcelFile } = await import('read-excel-file/browser')
-  const workbookSheets = await readExcelFile(file)
-  const sheets = workbookSheets.map((worksheet) => ({
-    name: worksheet.sheet,
-    rows: worksheet.data,
-  }))
-  return pickMeetingRowsFromSheets(sheets)
 }
 
 function SelectControl({ label, value, onChange, children }) {
@@ -3757,7 +3795,7 @@ function normalizeTrackedGroup(group) {
 }
 
 function readStoredFilters() {
-  return readJson(FILTER_STORAGE_KEY, {})
+  return readJson(FILTER_STORAGE_KEY, {}) || {}
 }
 
 function readStoredSavedViews() {
@@ -3773,16 +3811,19 @@ function readJson(key, fallback) {
     const raw = window.localStorage.getItem(key)
     return raw ? JSON.parse(raw) : fallback
   } catch {
+    blockStorageKey(key)
     return fallback
   }
 }
 
-function persistJson(key, value) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // localStorage may be unavailable in private or restricted contexts.
+function readStoredUndoSnapshot() {
+  const snapshot = readJson(UNDO_STORAGE_KEY, null)
+  if (!snapshot) return null
+  if (!Array.isArray(snapshot.records) || !snapshot.filters || typeof snapshot.filters !== 'object') {
+    blockStorageKey(UNDO_STORAGE_KEY)
+    return null
   }
+  return snapshot
 }
 
 function splitTerms(value) {
@@ -4038,7 +4079,7 @@ function serializeRecords(records) {
     record.diffMinutes,
     record.status,
   ])
-  return [header, ...rows].map((row) => row.join('\t')).join('\n')
+  return serializeDelimitedRows([header, ...rows])
 }
 
 function downloadText(filename, content) {

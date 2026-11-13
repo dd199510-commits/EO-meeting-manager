@@ -1,100 +1,56 @@
-import {
-  Building2,
-  CalendarRange,
-  CalendarPlus,
-  ContactRound,
-  Download,
-  FolderKanban,
-  House,
-  LineChart,
-  Megaphone,
-  PanelLeftClose,
-  PanelLeftOpen,
-  ScrollText,
-  Upload,
-} from 'lucide-react'
+import { useState } from 'react'
+import { Download, Search, Upload, Undo2, X } from 'lucide-react'
 import { APP_VERSION_LABEL } from '../lib/appVersion'
+import brandMark from '../assets/eo-mark.png'
 
-const TAB_META = {
-  home: { label: '首页', icon: House },
-  meetings: { label: '会议库', icon: FolderKanban },
-  planner: { label: '排程', icon: CalendarRange },
-  reserveNotice: { label: '预留通知', icon: Megaphone },
-  outlookInvite: { label: '会邀生成', icon: CalendarPlus },
-  timeAnalysis: { label: '时间分析', icon: LineChart },
-  contacts: { label: '通讯录', icon: ContactRound },
-  logs: { label: '记录', icon: ScrollText },
-}
+const TABS = [
+  ['home', '首页'], ['planner', '排程'], ['reserveNotice', '预留通知'],
+  ['outlookInvite', '会邀生成'], ['meetings', '会议库'], ['contacts', '通讯录'],
+  ['timeAnalysis', '时间分析'], ['logs', '记录'],
+]
 
-export function AppSidebar({
-  activeTab,
-  collapsed,
-  onTabChange,
-  onToggleCollapse,
-  onImportData,
-  onExport,
-}) {
+export function AppSidebar({ activeTab, onTabChange, onImportData, onExport, onUndoRestore, recoveryPoint, onSearchMeetings }) {
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [query, setQuery] = useState('')
+
+  function submitSearch(event) {
+    event.preventDefault()
+    if (!query.trim()) return
+    onSearchMeetings(query.trim())
+    setSearchOpen(false)
+  }
+
   return (
-    <aside className={collapsed ? 'nx-sidebar nx-sidebar-collapsed' : 'nx-sidebar'}>
-      <div className="nx-sidebar-brand">
-        <div className="nx-sidebar-logo" aria-hidden="true">
-          <Building2 size={20} />
-        </div>
-        {collapsed ? null : (
-          <div className="nx-sidebar-brand-copy">
-            <em>总裁办</em>
-            <strong>会议管理系统</strong>
-            <span>Version {APP_VERSION_LABEL}</span>
-          </div>
-        )}
-        <button
-          className="nx-sidebar-toggle"
-          onClick={onToggleCollapse}
-          type="button"
-          aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
-          title={collapsed ? '展开侧边栏' : '收起侧边栏'}
-        >
-          {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-        </button>
-      </div>
-
-      <nav className="nx-sidebar-nav" aria-label="系统主导航">
-        {Object.entries(TAB_META).map(([id, meta]) => (
-          <button
-            key={id}
-            className={activeTab === id ? 'nx-sidebar-link nx-sidebar-link-active' : 'nx-sidebar-link'}
-            onClick={() => onTabChange(id)}
-            type="button"
-            title={meta.label}
-            aria-label={meta.label}
-            aria-current={activeTab === id ? 'page' : undefined}
-          >
-            <meta.icon size={16} />
-            {collapsed ? null : meta.label}
-          </button>
-        ))}
+    <header className="eo-topbar">
+      <button className="eo-brand" onClick={() => onTabChange('home')} type="button" aria-label="返回首页">
+        <span className="eo-brand-mark" aria-hidden="true"><img src={brandMark} alt="" /></span>
+        <span>EO 会议管理</span>
+      </button>
+      <nav className="eo-main-nav" aria-label="系统主导航">
+        {TABS.map(([id, label]) => <button key={id} type="button"
+          className={activeTab === id ? 'eo-nav-item eo-nav-item-active' : 'eo-nav-item'}
+          aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTabChange(id)}>{label}</button>)}
       </nav>
-
-      <div className="nx-sidebar-footer">
-        <button
-          className="nx-sidebar-footer-btn"
-          onClick={onImportData}
-          type="button"
-          title="恢复系统备份"
-        >
-          <Upload size={15} />
-          {collapsed ? null : '恢复备份'}
+      <div className="eo-topbar-tools">
+        <button className="eo-icon-action" aria-label={searchOpen ? '关闭搜索' : '搜索会议'} title="搜索会议" onClick={() => setSearchOpen(value => !value)} type="button">
+          {searchOpen ? <X size={19} /> : <Search size={19} />}
         </button>
-        <button
-          className="nx-sidebar-footer-btn"
-          onClick={onExport}
-          type="button"
-          title="导出系统备份"
-        >
-          <Download size={15} />
-          {collapsed ? null : '导出备份'}
-        </button>
+        {searchOpen && <form className="eo-global-search" onSubmit={submitSearch}>
+          <Search size={17} aria-hidden="true" />
+          <input autoFocus aria-label="搜索会议名称或参会人" placeholder="搜索会议名称或参会人" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === 'Escape') setSearchOpen(false) }} />
+          <button className="nx-btn nx-btn-primary" type="submit">搜索</button>
+        </form>}
+        <details className="eo-account-menu">
+          <summary aria-label="本机与备份" title="本机与备份">EO</summary>
+          <div className="eo-account-popover">
+            <span className="eo-menu-caption">本机工作区 · {APP_VERSION_LABEL}</span>
+            <button type="button" onClick={onExport}><Download size={16} />导出备份</button>
+            <button type="button" onClick={onImportData}><Upload size={16} />恢复备份</button>
+            {recoveryPoint && <button type="button" onClick={onUndoRestore}><Undo2 size={16} />撤销上次恢复</button>}
+            <p>数据保存在这台电脑，建议定期导出备份。</p>
+          </div>
+        </details>
       </div>
-    </aside>
+    </header>
   )
 }

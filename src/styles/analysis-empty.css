@@ -1,0 +1,56 @@
+.app-shell.app-frame .eo-analysis-empty {
+  padding: 20px 0 36px;
+  color: #65738c;
+}
+.eo-analysis-empty-heading > span { color: #8b97af; font-size: 13px; }
+.app-shell.app-frame .eo-analysis-empty-heading > h1 {
+  margin: 12px 0 8px;
+  font-size: 30px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #293448;
+}
+.eo-analysis-empty-heading > p { margin: 0; font-size: 15px; color: #7d89a0; }
+.eo-analysis-empty-panel {
+  max-width: 740px;
+  margin: 58px auto 0;
+  padding: 38px 40px 30px;
+  background: #f2f6ff;
+  border: 1px solid #e5ecfa;
+  border-radius: 16px;
+}
+.eo-analysis-empty-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 52px;
+  height: 52px;
+  color: #7597db;
+  background: #e6eeff;
+  border-radius: 14px;
+}
+.app-shell.app-frame .eo-analysis-empty-panel > h2 {
+  margin: 22px 0 12px;
+  font-size: 24px;
+  color: #344461;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.eo-analysis-empty-panel > p { font-size: 15px; line-height: 1.9; color: #8090ab; }
+.eo-analysis-empty-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 25px; }
+.app-shell.app-frame .eo-analysis-empty-actions > button { font-size: 14px; min-height: 38px; padding: 0 18px; }
+.eo-analysis-empty-secondary { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin-top: 18px; }
+.eo-analysis-empty-secondary > button { padding: 0; background: transparent; border: 0; color: #728bc0; font: inherit; font-size: 13px; cursor: pointer; }
+.eo-analysis-empty-secondary > button:hover { color: #4f6daa; text-decoration: underline; }
+.eo-analysis-empty-secondary > span { color: #b7c4db; }
+.eo-analysis-empty-panel > .eo-analysis-empty-columns { margin-top: 26px; padding-top: 18px; border-top: 1px solid #e0e8f8; font-size: 13px; color: #92a0b7; }
+.eo-analysis-paste { display: grid; gap: 10px; margin-top: 22px; }
+.eo-analysis-paste > label { color: #6e7f9b; font-size: 13px; }
+.eo-analysis-paste > textarea { width: 100%; padding: 12px; border: 1px solid #d5e1f5; border-radius: 8px; resize: vertical; font: inherit; font-size: 13px; line-height: 1.7; }
+.eo-analysis-paste > button { justify-self: start; }
+.eo-analysis-empty-feedback { max-width: 740px; margin: 18px auto; color: #7187ae; font-size: 13px; line-height: 1.7; }
+.eo-analysis-empty-feedback > p { margin: 0 0 8px; }
+@media (max-width: 760px) {
+  .eo-analysis-empty-panel { margin-top: 30px; padding: 26px 22px; }
+  .app-shell.app-frame .eo-analysis-empty-heading > h1 { font-size: 26px; }
+}
